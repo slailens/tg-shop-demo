@@ -17,6 +17,7 @@ header p { font-size: 14px; opacity: 0.7; }
     background: var(--tg-theme-secondary-bg-color, #f0f0f0);
     padding: 8px 12px; border-radius: 20px;
     display: flex; align-items: center; gap: 5px;
+    color: var(--tg-theme-text-color, #000000); /* На всякий случай */
 }
 #cart-count { font-size: 14px; font-weight: bold; }
 
@@ -28,6 +29,7 @@ header p { font-size: 14px; opacity: 0.7; }
 }
 .category-card {
     background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+    color: var(--tg-theme-text-color, #000000); /* Чтобы текст не пропал */
     border-radius: 12px;
     padding: 20px 16px;
     text-align: center;
@@ -49,16 +51,13 @@ header p { font-size: 14px; opacity: 0.7; }
     gap: 12px;
 }
 .product-img {
-    width: 70px;
-    height: 70px;
-    border-radius: 8px;
-    object-fit: cover;
+    width: 70px; height: 70px;
+    border-radius: 8px; object-fit: cover;
     background-color: #ddd;
 }
 .product-info { flex-grow: 1; }
 .product-info h3 { font-size: 15px; margin-bottom: 4px; line-height: 1.2; }
 .product-info p { font-size: 14px; font-weight: bold; opacity: 0.9; }
-.action-btns { display: flex; gap: 8px; }
 
 button {
     background-color: var(--tg-theme-button-color, #2481cc);
@@ -74,9 +73,7 @@ button.minus { background-color: var(--tg-theme-secondary-bg-color, #e0e0e0); co
 .back-btn {
     background: transparent;
     color: var(--tg-theme-link-color, #2481cc);
-    padding: 0;
-    margin-bottom: 16px;
-    font-size: 16px;
+    padding: 0; margin-bottom: 16px; font-size: 16px;
 }
 
 /* Модальные окна */
