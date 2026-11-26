@@ -2,27 +2,27 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-// Имя пользователя
+// Вставьте сюда ваш URL из Google Apps Script (который заканчивается на /exec)
+const BACKEND_URL = "ВАШ_GOOGLE_SCRIPT_URL";
+
 const user = tg.initDataUnsafe?.user;
 if (user) document.getElementById('user-name').innerText = user.first_name;
 
-// Данные товаров
 const products = [
     { id: 1, name: 'Футболка с логотипом', price: 1500 },
     { id: 2, name: 'Кружка "Я из Telegram"', price: 800 },
     { id: 3, name: 'Цифровой гайд', price: 500 },
 ];
 
-// Состояние корзины (объект: { productId: quantity })
 let cart = {};
 
-// Элементы DOM
+// DOM
 const productList = document.getElementById('product-list');
 const cartCount = document.getElementById('cart-count');
 const cartModal = document.getElementById('cart-modal');
 const cartItemsContainer = document.getElementById('cart-items');
+const checkoutModal = document.getElementById('checkout-modal');
 
-// 1. Отрисовка товаров
 function renderProducts() {
     productList.innerHTML = '';
     products.forEach(product => {
@@ -39,12 +39,10 @@ function renderProducts() {
     });
 }
 
-// 2. Логика корзины
 function updateCartUI() {
     const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
     cartCount.innerText = totalItems;
 
-    // Управление главной кнопкой Telegram (MainButton)
     if (totalItems > 0) {
         tg.MainButton.setText(`Оформить заказ на ${calculateTotal()} ₽`);
         tg.MainButton.show();
@@ -52,7 +50,6 @@ function updateCartUI() {
         tg.MainButton.hide();
     }
 
-    // Отрисовка элементов внутри модального окна
     cartItemsContainer.innerHTML = '';
     Object.keys(cart).forEach(id => {
         const product = products.find(p => p.id == id);
@@ -60,9 +57,7 @@ function updateCartUI() {
         const item = document.createElement('div');
         item.className = 'cart-item';
         item.innerHTML = `
-            <div class="cart-item-info">
-                <h4>${product.name}</h4>
-            </div>
+            <div class="cart-item-info"><h4>${product.name}</h4></div>
             <div class="cart-item-price">${product.price * qty} ₽</div>
             <div class="action-btns">
                 <button class="minus" onclick="changeQty(${id}, -1)">-</button>
@@ -81,23 +76,19 @@ function calculateTotal() {
     }, 0);
 }
 
-// Глобальные функции для кнопок в модальном окне
 window.changeQty = (id, delta) => {
     if (!cart[id]) return;
     cart[id] += delta;
     if (cart[id] <= 0) delete cart[id];
-    
-    tg.HapticFeedback.impactOccurred('light'); // Вибрация
+    tg.HapticFeedback.impactOccurred('light');
     updateCartUI();
 };
 
-// 3. Обработчики событий
 productList.addEventListener('click', (e) => {
     if (e.target.classList.contains('buy-btn')) {
         const id = e.target.dataset.id;
         cart[id] = (cart[id] || 0) + 1;
-        
-        tg.HapticFeedback.notificationOccurred('success'); // Вибрация успеха
+        tg.HapticFeedback.notificationOccurred('success');
         updateCartUI();
     }
 });
@@ -111,17 +102,72 @@ document.getElementById('close-cart').addEventListener('click', () => {
     cartModal.classList.add('hidden');
 });
 
-// 4. Обработка нажатия на главную кнопку (MainButton)
+// Главная кнопка теперь открывает форму оформления
 tg.MainButton.onClick(() => {
     tg.HapticFeedback.impactOccurred('heavy');
-    // Пока просто показываем попап. На следующем этапе мы отправим это на сервер.
-    tg.showPopup({
-        title: 'Заказ оформлен!',
-        message: `Сумма заказа: ${calculateTotal()} ₽.\n(Здесь мы позже добавим форму с именем и телефоном)`,
-        buttons: [{ type: 'ok' }]
+    cartModal.classList.add('hidden'); // Закрываем корзину, если открыта
+    checkoutModal.classList.remove('hidden'); // Открываем форму
+});
+
+// Закрытие формы
+document.getElementById('close-checkout').addEventListener('click', () => {
+    checkoutModal.classList.add('hidden');
+});
+
+// ОТПРАВКА ЗАКАЗА НА СЕРВЕР
+document.getElementById('order-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('client-name').value;
+    const phone = document.getElementById('client-phone').value;
+    
+    // Собираем массив товаров для отправки
+    const itemsToSend = Object.keys(cart).map(id => {
+        const p = products.find(prod => prod.id == id);
+        return { name: p.name, price: p.price, qty: cart[id] };
+    });
+
+    const orderData = {
+        name: name,
+        phone: phone,
+        total: calculateTotal(),
+        items: itemsToSend
+    };
+
+    // Показываем загрузку
+    tg.MainButton.showProgress();
+    
+    // Отправляем данные в Google Apps Script
+    fetch(BACKEND_URL, {
+        method: 'POST',
+        body: JSON.stringify(orderData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        tg.MainButton.hideProgress();
+        if (data.status === 'success') {
+            tg.HapticFeedback.notificationOccurred('success');
+            tg.showPopup({
+                title: 'Успешно!',
+                message: 'Ваш заказ принят. Мы свяжемся с вами.',
+                buttons: [{ type: 'ok' }]
+            }, () => {
+                // Очищаем корзину после успешного заказа
+                cart = {};
+                updateCartUI();
+                checkoutModal.classList.add('hidden');
+                document.getElementById('order-form').reset();
+            });
+        } else {
+            throw new Error('Ошибка сервера');
+        }
+    })
+    .catch(error => {
+        tg.MainButton.hideProgress();
+        tg.HapticFeedback.notificationOccurred('error');
+        tg.showAlert('Произошла ошибка при отправке. Попробуйте позже.');
     });
 });
 
-// Инициализация
 renderProducts();
 updateCartUI();
