@@ -31,7 +31,7 @@
         <div id="cart-items"></div>
     </div>
 
-    <!-- Модальное окно оформления заказа (ДОБАВЛЕНО СЮДА) -->
+    <!-- Модальное окно оформления заказа -->
     <div id="checkout-modal" class="hidden">
         <div class="cart-header">
             <h2>Оформление заказа</h2>
@@ -40,7 +40,7 @@
         <form id="order-form" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
             <input type="text" id="client-name" placeholder="Ваше имя" required style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px;">
             <input type="tel" id="client-phone" placeholder="Ваш телефон" required style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px;">
-            <button type="submit" style="margin-top: 10px; padding: 15px; font-size: 16px;">Подтвердить заказ</button>
+            <!-- Кнопка отправки убрана, ее роль выполняет MainButton Telegram -->
         </form>
     </div>
 
