@@ -7,10 +7,10 @@ tg.setHeaderColor('#4A72FF'); // Синяя шапка для контраста
 tg.setBackgroundColor('#E9ECEF');
 tg.MainButton.setParams({ color: '#4A72FF', text_color: '#ffffff' });
 
-// Ваша новая ссылка на Google Script
+// Ваша ссылка на Google Script
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxZ-cpm1TbzoGfbXSWOgXuYfyloZJRJsLH_SfGLVqQZIRI5pavr9iMkP6vh3HAMX7ioeQ/exec";
 
-// Ваш Telegram ID (для доступа к админке)
+// Ваш Telegram ID
 const ADMIN_ID = 767941221; 
 
 let isAdmin = false;
@@ -23,29 +23,24 @@ if (user) {
     }
 }
 
-// Глобальные переменные состояния
 let categories = []; 
 let products = []; 
 let cart = {};
 let isCheckoutActive = false;
 
-// DOM Элементы
 const categoryListContainer = document.getElementById('category-list');
 const productList = document.getElementById('product-list');
 const pageTitle = document.getElementById('page-title');
 const categoryListView = document.getElementById('categories-view');
 const productListView = document.getElementById('products-view');
 
-// --- ЗАГРУЗКА ДАННЫХ ---
 async function fetchData() {
     categoryListContainer.innerHTML = '<p style="text-align:center; width:100%;">Загрузка...</p>';
     try {
-        // Загружаем категории
         const resCat = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "get_categories" }) });
         const dataCat = await resCat.json();
         if(dataCat.status === 'success') categories = dataCat.categories;
 
-        // Загружаем товары
         const resProd = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "get_products" }) });
         const dataProd = await resProd.json();
         if(dataProd.status === 'success') products = dataProd.products;
@@ -89,7 +84,6 @@ function showProducts(categoryId, categoryName) {
 
     filteredProducts.forEach(product => {
         let priceHtml = '';
-        // Если есть скидка, показываем старую цену зачеркнутой, новую зеленым и бейджик
         if (product.discount > 0) {
             let oldPrice = product.price;
             let newPrice = Math.round(oldPrice * (1 - product.discount / 100));
@@ -124,7 +118,6 @@ document.getElementById('back-to-categories').onclick = () => {
     pageTitle.innerText = 'Категории';
 };
 
-// --- ЛОГИКА КОРЗИНЫ ---
 function updateCartUI() {
     if (tg.CloudStorage) tg.CloudStorage.setItem('tg_shop_cart', JSON.stringify(cart));
     localStorage.setItem('tg_shop_cart', JSON.stringify(cart));
@@ -318,14 +311,12 @@ if (isAdmin) {
         document.getElementById('admin-total-orders').innerText = orders.length;
     }
 
-    // === ОТЛАДОЧНАЯ ФУНКЦИЯ С ЖЕЛТОЙ КНОПКОЙ ===
     function renderAdminProducts() {
         const list = document.getElementById('admin-products-list');
         list.innerHTML = '';
         
-        // ОТЛАДКА: Если товаров нет, пишем об этом
         if (products.length === 0) {
-            list.innerHTML = '<p style="color:red; text-align:center;">Товаров нет (или скрипт не смог их загрузить)</p>';
+            list.innerHTML = '<p style="color:red; text-align:center;">Товаров нет</p>';
             return;
         }
 
@@ -336,13 +327,12 @@ if (isAdmin) {
                 <div style="display:flex; align-items:center; gap:10px;">
                     <img src="${prod.image}" style="width:40px; height:40px; object-fit:cover; border-radius:6px;">
                     <div class="admin-prod-info">
-                        <h5>${prod.name}</h5>
+                        <h5>${prod.name} ${prod.discount > 0 ? `<span style="color:red; font-size:10px;">(-${prod.discount}%)</span>` : ''}</h5>
                         <p>${prod.price} ₽</p>
                     </div>
                 </div>
                 <div style="display:flex; gap: 5px;">
-                    <!-- Ярко-желтая кнопка для теста -->
-                    <button class="edit-btn" onclick="editProduct('${prod.id}')" style="background: #FFD700; color: black; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-weight: bold;">✏️ РЕД</button>
+                    <button class="edit-btn" onclick="editProduct('${prod.id}')" style="background: #E9ECEF; border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; cursor: pointer;">✏️</button>
                     <button class="del-btn" onclick="deleteProduct('${prod.id}')">Удалить</button>
                 </div>
             `;
@@ -375,7 +365,6 @@ if (isAdmin) {
         });
     }
 
-    // Глобальные функции админки
     window.updateOrderStatus = async (rowIndex, status) => {
         tg.HapticFeedback.impactOccurred('light');
         await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "update_order_status", rowIndex, status }) });
@@ -469,7 +458,6 @@ if (isAdmin) {
     };
 }
 
-// --- ЗАПУСК ПРИЛОЖЕНИЯ ---
 fetchData();
 updateCartUI();
 
