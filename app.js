@@ -1,3 +1,10 @@
+// Ловушка для ошибок: если что-то сломается, вы увидите это на экране
+window.onerror = function(message, source, lineno, colno, error) {
+    document.body.innerHTML += `<div style="color: red; padding: 20px; font-size: 14px; background: white; position: fixed; top: 50px; left: 10px; right: 10px; z-index: 9999; border: 2px solid red; border-radius: 8px;">
+        <b>Ошибка JS:</b><br>${message}<br>Строка: ${lineno}
+    </div>`;
+};
+
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
@@ -14,18 +21,15 @@ const categories = [
     { id: 'digital', name: '💻 Цифровые товары' }
 ];
 
-// Ссылки на картинки взяты с Unsplash (бесплатные фото)
 const products = [
     { id: 1, category: 'clothing', name: 'Футболка "Hello World"', price: 1500, image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=150&h=150&fit=crop' },
     { id: 2, category: 'clothing', name: 'Худи Developer', price: 3500, image: 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=150&h=150&fit=crop' },
     { id: 3, category: 'clothing', name: 'Кепка Telegram', price: 1200, image: 'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=150&h=150&fit=crop' },
     { id: 4, category: 'clothing', name: 'Носки с кодом', price: 500, image: 'https://images.unsplash.com/photo-1582966772680-860e372bb558?w=150&h=150&fit=crop' },
-    
     { id: 5, category: 'accessories', name: 'Кружка "Я из TG"', price: 800, image: 'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=150&h=150&fit=crop' },
     { id: 6, category: 'accessories', name: 'Блокнот для идей', price: 900, image: 'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=150&h=150&fit=crop' },
     { id: 7, category: 'accessories', name: 'Шоппер', price: 1100, image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?w=150&h=150&fit=crop' },
     { id: 8, category: 'accessories', name: 'Стикерпак', price: 300, image: 'https://images.unsplash.com/photo-1572375992501-4b0892d50c69?w=150&h=150&fit=crop' },
-    
     { id: 9, category: 'digital', name: 'Гайд по Mini Apps', price: 2500, image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=150&h=150&fit=crop' },
     { id: 10, category: 'digital', name: 'Пресеты для фото', price: 1000, image: 'https://images.unsplash.com/photo-1554048612-b6a482bc67e5?w=150&h=150&fit=crop' },
     { id: 11, category: 'digital', name: 'Шаблон Notion', price: 700, image: 'https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=150&h=150&fit=crop' },
@@ -36,19 +40,13 @@ let cart = {};
 let isCheckoutActive = false;
 
 // DOM Элементы
-const categoryListView = document.getElementById('categories-view');
-const productListView = document.getElementById('products-view');
 const categoryListContainer = document.getElementById('category-list');
 const productList = document.getElementById('product-list');
 const pageTitle = document.getElementById('page-title');
+const categoryListView = document.getElementById('categories-view');
+const productListView = document.getElementById('products-view');
 
-const cartCount = document.getElementById('cart-count');
-const cartModal = document.getElementById('cart-modal');
-const cartItemsContainer = document.getElementById('cart-items');
-const checkoutModal = document.getElementById('checkout-modal');
-const orderForm = document.getElementById('order-form');
-
-// --- ЛОГИКА ОТРИСОВКИ ---
+// --- ФУНКЦИИ ОТРИСОВКИ ---
 
 function renderCategories() {
     categoryListContainer.innerHTML = '';
@@ -67,7 +65,7 @@ function renderCategories() {
 function showProducts(categoryId, categoryName) {
     categoryListView.classList.add('hidden');
     productListView.classList.remove('hidden');
-    pageTitle.innerText = categoryName; // Меняем заголовок вверху
+    pageTitle.innerText = categoryName;
 
     productList.innerHTML = '';
     const filteredProducts = products.filter(p => p.category === categoryId);
@@ -91,35 +89,19 @@ document.getElementById('back-to-categories').onclick = () => {
     tg.HapticFeedback.impactOccurred('light');
     productListView.classList.add('hidden');
     categoryListView.classList.remove('hidden');
-    pageTitle.innerText = 'Категории'; // Возвращаем заголовок
+    pageTitle.innerText = 'Категории';
 };
 
 // --- ЛОГИКА КОРЗИНЫ ---
 
-function initApp() {
-    if (tg.CloudStorage) {
-        tg.CloudStorage.getItem('tg_shop_cart', (err, value) => {
-            if (!err && value) {
-                try { cart = JSON.parse(value); } catch(e) {}
-            } else {
-                cart = JSON.parse(localStorage.getItem('tg_shop_cart')) || {};
-            }
-            renderCategories();
-            updateCartUI();
-        });
-    } else {
-        cart = JSON.parse(localStorage.getItem('tg_shop_cart')) || {};
-        renderCategories();
-        updateCartUI();
-    }
-}
-
 function updateCartUI() {
-    if (tg.CloudStorage) tg.CloudStorage.setItem('tg_shop_cart', JSON.stringify(cart));
-    localStorage.setItem('tg_shop_cart', JSON.stringify(cart));
+    try {
+        if (tg.CloudStorage) tg.CloudStorage.setItem('tg_shop_cart', JSON.stringify(cart));
+        localStorage.setItem('tg_shop_cart', JSON.stringify(cart));
+    } catch(e) {}
 
     const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-    cartCount.innerText = totalItems;
+    document.getElementById('cart-count').innerText = totalItems;
 
     if (totalItems > 0) {
         if (isCheckoutActive) {
@@ -133,6 +115,7 @@ function updateCartUI() {
         if (isCheckoutActive) closeCheckout();
     }
 
+    const cartItemsContainer = document.getElementById('cart-items');
     cartItemsContainer.innerHTML = '';
     Object.keys(cart).forEach(id => {
         const product = products.find(p => p.id == id);
@@ -169,7 +152,6 @@ window.changeQty = (id, delta) => {
     updateCartUI();
 };
 
-// Делегирование событий для динамически создаваемых кнопок "+"
 productList.addEventListener('click', (e) => {
     if (e.target.classList.contains('buy-btn')) {
         const id = e.target.dataset.id;
@@ -179,27 +161,27 @@ productList.addEventListener('click', (e) => {
     }
 });
 
-// --- ИНТЕРФЕЙС КОРЗИНЫ И ОФОРМЛЕНИЯ ---
+// --- ИНТЕРФЕЙС КОРЗИНЫ ---
 
 document.getElementById('cart-icon').addEventListener('click', () => {
     tg.HapticFeedback.impactOccurred('medium');
-    cartModal.classList.remove('hidden');
+    document.getElementById('cart-modal').classList.remove('hidden');
 });
 
 document.getElementById('close-cart').addEventListener('click', () => {
-    cartModal.classList.add('hidden');
+    document.getElementById('cart-modal').classList.add('hidden');
 });
 
 function openCheckout() {
     isCheckoutActive = true;
-    cartModal.classList.add('hidden');
-    checkoutModal.classList.remove('hidden');
+    document.getElementById('cart-modal').classList.add('hidden');
+    document.getElementById('checkout-modal').classList.remove('hidden');
     updateCartUI();
 }
 
 function closeCheckout() {
     isCheckoutActive = false;
-    checkoutModal.classList.add('hidden');
+    document.getElementById('checkout-modal').classList.add('hidden');
     updateCartUI();
 }
 
@@ -210,13 +192,12 @@ document.getElementById('close-checkout').addEventListener('click', () => {
 tg.MainButton.onClick(() => {
     tg.HapticFeedback.impactOccurred('heavy');
     if (isCheckoutActive) {
-        if (orderForm.reportValidity()) submitOrder();
+        if (document.getElementById('order-form').reportValidity()) submitOrder();
     } else {
         openCheckout();
     }
 });
 
-// --- ОТПРАВКА ЗАКАЗА ---
 function submitOrder() {
     const name = document.getElementById('client-name').value;
     const phone = document.getElementById('client-phone').value;
@@ -228,10 +209,7 @@ function submitOrder() {
     }).filter(item => item !== null);
 
     const orderData = {
-        name: name,
-        phone: phone,
-        total: calculateTotal(),
-        items: itemsToSend,
+        name: name, phone: phone, total: calculateTotal(), items: itemsToSend,
         tg_user_id: user ? user.id : null
     };
 
@@ -246,15 +224,13 @@ function submitOrder() {
         tg.MainButton.hideProgress();
         tg.HapticFeedback.notificationOccurred('success');
         tg.showPopup({
-            title: 'Успешно!',
-            message: 'Ваш заказ принят. Мы свяжемся с вами.',
+            title: 'Успешно!', message: 'Ваш заказ принят.',
             buttons: [{ type: 'ok' }]
         }, () => {
             cart = {};
-            orderForm.reset();
+            document.getElementById('order-form').reset();
             closeCheckout();
             updateCartUI();
-            // Возвращаем пользователя на главный экран после заказа
             productListView.classList.add('hidden');
             categoryListView.classList.remove('hidden');
             pageTitle.innerText = 'Категории';
@@ -263,9 +239,33 @@ function submitOrder() {
     .catch(error => {
         tg.MainButton.hideProgress();
         tg.HapticFeedback.notificationOccurred('error');
-        tg.showAlert('Ошибка сети. Проверьте интернет-соединение.');
+        tg.showAlert('Ошибка сети.');
     });
 }
 
-// Запуск
-initApp();
+// --- ЗАПУСК ---
+// 1. Сначала мгновенно рисуем категории, чтобы экран не был пустым
+renderCategories();
+updateCartUI();
+
+// 2. Затем в фоне грузим корзину из памяти
+try {
+    if (tg.CloudStorage) {
+        tg.CloudStorage.getItem('tg_shop_cart', (err, value) => {
+            if (!err && value) {
+                try { 
+                    cart = JSON.parse(value); 
+                    updateCartUI(); 
+                } catch(e) {}
+            }
+        });
+    } else {
+        const localCart = localStorage.getItem('tg_shop_cart');
+        if (localCart) {
+            cart = JSON.parse(localCart);
+            updateCartUI();
+        }
+    }
+} catch (e) {
+    console.log("Ошибка памяти:", e);
+}
