@@ -126,7 +126,6 @@ document.getElementById('back-to-categories').onclick = () => {
 
 // --- ЛОГИКА КОРЗИНЫ ---
 function updateCartUI() {
-    // Сохраняем в облако Telegram и локально
     if (tg.CloudStorage) tg.CloudStorage.setItem('tg_shop_cart', JSON.stringify(cart));
     localStorage.setItem('tg_shop_cart', JSON.stringify(cart));
 
@@ -151,7 +150,6 @@ function updateCartUI() {
         const product = products.find(p => p.id == id);
         if (!product) return;
         const qty = cart[id];
-        // Считаем цену с учетом скидки для отображения в корзине
         const finalPrice = product.discount > 0 ? Math.round(product.price * (1 - product.discount / 100)) : product.price;
         
         const item = document.createElement('div');
@@ -175,7 +173,6 @@ function calculateTotal() {
     return Object.keys(cart).reduce((total, id) => {
         const product = products.find(p => p.id == id);
         if(!product) return total;
-        // Считаем итоговую сумму с учетом скидки
         const finalPrice = product.discount > 0 ? Math.round(product.price * (1 - product.discount / 100)) : product.price;
         return total + (finalPrice * cart[id]);
     }, 0);
@@ -230,7 +227,6 @@ async function submitOrder() {
     const name = document.getElementById('client-name').value;
     const phone = document.getElementById('client-phone').value;
     
-    // Формируем массив товаров с уже примененными скидками
     const itemsToSend = Object.keys(cart).map(id => {
         const p = products.find(prod => prod.id == id);
         const finalPrice = p.discount > 0 ? Math.round(p.price * (1 - p.discount / 100)) : p.price;
@@ -267,7 +263,6 @@ if (isAdmin) {
     };
     document.getElementById('close-admin').onclick = () => document.getElementById('admin-modal').classList.add('hidden');
 
-    // Переключение табов
     document.querySelectorAll('.admin-tab').forEach(tab => {
         tab.onclick = () => {
             document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
@@ -278,7 +273,6 @@ if (isAdmin) {
     });
 
     async function loadAdminData() {
-        // Заказы
         try {
             const res = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "get_orders" }) });
             const data = await res.json();
@@ -324,22 +318,31 @@ if (isAdmin) {
         document.getElementById('admin-total-orders').innerText = orders.length;
     }
 
+    // === ОТЛАДОЧНАЯ ФУНКЦИЯ С ЖЕЛТОЙ КНОПКОЙ ===
     function renderAdminProducts() {
         const list = document.getElementById('admin-products-list');
         list.innerHTML = '';
+        
+        // ОТЛАДКА: Если товаров нет, пишем об этом
+        if (products.length === 0) {
+            list.innerHTML = '<p style="color:red; text-align:center;">Товаров нет (или скрипт не смог их загрузить)</p>';
+            return;
+        }
+
         products.forEach(prod => {
             const card = document.createElement('div');
             card.className = 'admin-prod-card';
             card.innerHTML = `
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <img src="${prod.image}">
+                    <img src="${prod.image}" style="width:40px; height:40px; object-fit:cover; border-radius:6px;">
                     <div class="admin-prod-info">
-                        <h5>${prod.name} ${prod.discount > 0 ? `<span style="color:red; font-size:10px;">(-${prod.discount}%)</span>` : ''}</h5>
+                        <h5>${prod.name}</h5>
                         <p>${prod.price} ₽</p>
                     </div>
                 </div>
                 <div style="display:flex; gap: 5px;">
-                    <button class="edit-btn" onclick="editProduct('${prod.id}')" style="background: #E9ECEF; border: 1px solid #ccc; border-radius: 6px; padding: 8px; cursor: pointer;">✏️</button>
+                    <!-- Ярко-желтая кнопка для теста -->
+                    <button class="edit-btn" onclick="editProduct('${prod.id}')" style="background: #FFD700; color: black; border: none; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-weight: bold;">✏️ РЕД</button>
                     <button class="del-btn" onclick="deleteProduct('${prod.id}')">Удалить</button>
                 </div>
             `;
@@ -387,7 +390,6 @@ if (isAdmin) {
     };
 
     window.deleteCategory = async (id) => {
-        // Проверка, есть ли товары в категории
         const hasProducts = products.some(p => p.category === id);
         if (hasProducts) {
             tg.showAlert("Нельзя удалить категорию, пока в ней есть товары! Сначала удалите или перенесите товары.");
@@ -406,7 +408,6 @@ if (isAdmin) {
 
         tg.HapticFeedback.impactOccurred('light');
         
-        // Заполняем форму данными товара
         document.getElementById('edit-prod-id').value = prod.id;
         document.getElementById('new-prod-name').value = prod.name;
         document.getElementById('new-prod-price').value = prod.price;
@@ -414,26 +415,22 @@ if (isAdmin) {
         document.getElementById('new-prod-img').value = prod.image;
         document.getElementById('new-prod-cat').value = prod.category;
 
-        // Меняем кнопку и показываем форму
         document.getElementById('admin-save-btn').innerText = "Обновить товар";
         document.getElementById('admin-save-btn').style.background = "#4A72FF";
         document.getElementById('admin-add-product-form').classList.remove('hidden');
         
-        // Скроллим наверх к форме
         document.querySelector('#tab-products').scrollIntoView({ behavior: 'smooth' });
     };
 
-    // Кнопка "+ Добавить товар" (сбрасываем форму в режим создания)
     document.getElementById('btn-show-add-product').onclick = () => {
         const form = document.getElementById('admin-add-product-form');
         form.reset();
-        document.getElementById('edit-prod-id').value = ""; // Очищаем ID
+        document.getElementById('edit-prod-id').value = "";
         document.getElementById('admin-save-btn').innerText = "Сохранить";
         document.getElementById('admin-save-btn').style.background = "#27AE60";
         form.classList.toggle('hidden');
     };
 
-    // Отправка формы товара (и создание, и обновление)
     document.getElementById('admin-add-product-form').onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('edit-prod-id').value;
@@ -445,7 +442,6 @@ if (isAdmin) {
 
         tg.HapticFeedback.notificationOccurred('success');
         
-        // Если есть ID — обновляем, если нет — создаем
         const actionType = id ? "update_product" : "add_product";
         
         await fetch(BACKEND_URL, { 
@@ -461,7 +457,6 @@ if (isAdmin) {
         renderAdminProducts();
     };
 
-    // Отправка формы категории
     document.getElementById('admin-add-category-form').onsubmit = async (e) => {
         e.preventDefault();
         const name = document.getElementById('new-cat-name').value;
