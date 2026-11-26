@@ -1,12 +1,17 @@
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
-tg.setHeaderColor('#4A72FF'); // Сделал шапку синей, чтобы иконки были видны
+
+// Настройки внешнего вида
+tg.setHeaderColor('#4A72FF'); // Синяя шапка для контраста с иконками
 tg.setBackgroundColor('#E9ECEF');
 tg.MainButton.setParams({ color: '#4A72FF', text_color: '#ffffff' });
 
+// Ваша новая ссылка на Google Script
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxZ-cpm1TbzoGfbXSWOgXuYfyloZJRJsLH_SfGLVqQZIRI5pavr9iMkP6vh3HAMX7ioeQ/exec";
-const ADMIN_ID = 767941221; // Ваш ID
+
+// Ваш Telegram ID (для доступа к админке)
+const ADMIN_ID = 767941221; 
 
 let isAdmin = false;
 const user = tg.initDataUnsafe?.user;
@@ -18,12 +23,13 @@ if (user) {
     }
 }
 
+// Глобальные переменные состояния
 let categories = []; 
 let products = []; 
 let cart = {};
 let isCheckoutActive = false;
-let currentCategoryId = null;
 
+// DOM Элементы
 const categoryListContainer = document.getElementById('category-list');
 const productList = document.getElementById('product-list');
 const pageTitle = document.getElementById('page-title');
@@ -69,7 +75,6 @@ function renderCategories() {
 }
 
 function showProducts(categoryId, categoryName) {
-    currentCategoryId = categoryId;
     categoryListView.classList.add('hidden');
     productListView.classList.remove('hidden');
     pageTitle.innerText = categoryName;
@@ -84,6 +89,7 @@ function showProducts(categoryId, categoryName) {
 
     filteredProducts.forEach(product => {
         let priceHtml = '';
+        // Если есть скидка, показываем старую цену зачеркнутой, новую зеленым и бейджик
         if (product.discount > 0) {
             let oldPrice = product.price;
             let newPrice = Math.round(oldPrice * (1 - product.discount / 100));
@@ -93,11 +99,8 @@ function showProducts(categoryId, categoryName) {
                     <span class="old-price">${oldPrice} ₽</span>
                     <span class="discount-badge">-${product.discount}%</span>
                 </div>`;
-            // Для корзины используем цену со скидкой
-            product.finalPrice = newPrice; 
         } else {
             priceHtml = `<div class="price-block"><span class="new-price">${product.price} ₽</span></div>`;
-            product.finalPrice = product.price;
         }
 
         const card = document.createElement('div');
@@ -121,8 +124,9 @@ document.getElementById('back-to-categories').onclick = () => {
     pageTitle.innerText = 'Категории';
 };
 
-// --- КОРЗИНА ---
+// --- ЛОГИКА КОРЗИНЫ ---
 function updateCartUI() {
+    // Сохраняем в облако Telegram и локально
     if (tg.CloudStorage) tg.CloudStorage.setItem('tg_shop_cart', JSON.stringify(cart));
     localStorage.setItem('tg_shop_cart', JSON.stringify(cart));
 
@@ -147,14 +151,15 @@ function updateCartUI() {
         const product = products.find(p => p.id == id);
         if (!product) return;
         const qty = cart[id];
-        const pPrice = product.discount > 0 ? Math.round(product.price * (1 - product.discount / 100)) : product.price;
+        // Считаем цену с учетом скидки для отображения в корзине
+        const finalPrice = product.discount > 0 ? Math.round(product.price * (1 - product.discount / 100)) : product.price;
         
         const item = document.createElement('div');
         item.className = 'cart-item';
         item.innerHTML = `
             <div class="cart-item-info">
                 <h4>${product.name}</h4>
-                <div class="cart-item-price">${pPrice * qty} ₽</div>
+                <div class="cart-item-price">${finalPrice * qty} ₽</div>
             </div>
             <div class="action-btns">
                 <button class="minus" onclick="changeQty('${id}', -1)">−</button>
@@ -170,6 +175,7 @@ function calculateTotal() {
     return Object.keys(cart).reduce((total, id) => {
         const product = products.find(p => p.id == id);
         if(!product) return total;
+        // Считаем итоговую сумму с учетом скидки
         const finalPrice = product.discount > 0 ? Math.round(product.price * (1 - product.discount / 100)) : product.price;
         return total + (finalPrice * cart[id]);
     }, 0);
@@ -223,6 +229,8 @@ tg.MainButton.onClick(() => {
 async function submitOrder() {
     const name = document.getElementById('client-name').value;
     const phone = document.getElementById('client-phone').value;
+    
+    // Формируем массив товаров с уже примененными скидками
     const itemsToSend = Object.keys(cart).map(id => {
         const p = products.find(prod => prod.id == id);
         const finalPrice = p.discount > 0 ? Math.round(p.price * (1 - p.discount / 100)) : p.price;
@@ -259,6 +267,7 @@ if (isAdmin) {
     };
     document.getElementById('close-admin').onclick = () => document.getElementById('admin-modal').classList.add('hidden');
 
+    // Переключение табов
     document.querySelectorAll('.admin-tab').forEach(tab => {
         tab.onclick = () => {
             document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
@@ -275,6 +284,7 @@ if (isAdmin) {
             const data = await res.json();
             if (data.status === 'success') renderAdminOrders(data.orders);
         } catch(e) {}
+        
         renderAdminProducts();
         renderAdminCategories();
         updateCategorySelect();
@@ -284,13 +294,18 @@ if (isAdmin) {
         const list = document.getElementById('admin-orders-list');
         list.innerHTML = '';
         let totalRevenue = 0;
+        
         if (orders.length === 0) list.innerHTML = '<p style="text-align:center; color: #7F8C8D;">Заказов пока нет</p>';
+        
         orders.forEach(order => {
             if (order.status !== 'Отменен') totalRevenue += Number(order.total);
             const card = document.createElement('div');
             card.className = 'order-admin-card';
-            let itemsArr = []; try { itemsArr = JSON.parse(order.items); } catch(e){}
+            
+            let itemsArr = []; 
+            try { itemsArr = JSON.parse(order.items); } catch(e){}
             let itemsHtml = itemsArr.map(i => `${i.name} (${i.qty}шт)`).join(', ');
+            
             card.innerHTML = `
                 <h4>${order.name} <span style="font-weight:normal; font-size:12px; color:#999;">${order.date}</span></h4>
                 <p>📞 ${order.phone} | 💰 <b>${order.total} ₽</b></p>
@@ -304,6 +319,7 @@ if (isAdmin) {
             `;
             list.appendChild(card);
         });
+        
         document.getElementById('admin-total-revenue').innerText = totalRevenue + ' ₽';
         document.getElementById('admin-total-orders').innerText = orders.length;
     }
@@ -322,7 +338,10 @@ if (isAdmin) {
                         <p>${prod.price} ₽</p>
                     </div>
                 </div>
-                <button class="del-btn" onclick="deleteProduct('${prod.id}')">Удалить</button>
+                <div style="display:flex; gap: 5px;">
+                    <button class="edit-btn" onclick="editProduct('${prod.id}')" style="background: #E9ECEF; border: 1px solid #ccc; border-radius: 6px; padding: 8px; cursor: pointer;">✏️</button>
+                    <button class="del-btn" onclick="deleteProduct('${prod.id}')">Удалить</button>
+                </div>
             `;
             list.appendChild(card);
         });
@@ -347,11 +366,13 @@ if (isAdmin) {
         select.innerHTML = '';
         categories.forEach(cat => {
             const opt = document.createElement('option');
-            opt.value = cat.id; opt.innerText = cat.name;
+            opt.value = cat.id; 
+            opt.innerText = cat.name;
             select.appendChild(opt);
         });
     }
 
+    // Глобальные функции админки
     window.updateOrderStatus = async (rowIndex, status) => {
         tg.HapticFeedback.impactOccurred('light');
         await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "update_order_status", rowIndex, status }) });
@@ -361,7 +382,8 @@ if (isAdmin) {
     window.deleteProduct = async (id) => {
         if (!confirm("Удалить этот товар?")) return;
         await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "delete_product", id }) });
-        await fetchData(); renderAdminProducts();
+        await fetchData(); 
+        renderAdminProducts();
     };
 
     window.deleteCategory = async (id) => {
@@ -373,13 +395,48 @@ if (isAdmin) {
         }
         if (!confirm("Удалить эту категорию?")) return;
         await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "delete_category", id }) });
-        await fetchData(); renderAdminCategories(); updateCategorySelect();
+        await fetchData(); 
+        renderAdminCategories(); 
+        updateCategorySelect();
     };
 
-    document.getElementById('btn-show-add-product').onclick = () => document.getElementById('admin-add-product-form').classList.toggle('hidden');
+    window.editProduct = (id) => {
+        const prod = products.find(p => p.id == id);
+        if (!prod) return;
 
+        tg.HapticFeedback.impactOccurred('light');
+        
+        // Заполняем форму данными товара
+        document.getElementById('edit-prod-id').value = prod.id;
+        document.getElementById('new-prod-name').value = prod.name;
+        document.getElementById('new-prod-price').value = prod.price;
+        document.getElementById('new-prod-discount').value = prod.discount || 0;
+        document.getElementById('new-prod-img').value = prod.image;
+        document.getElementById('new-prod-cat').value = prod.category;
+
+        // Меняем кнопку и показываем форму
+        document.getElementById('admin-save-btn').innerText = "Обновить товар";
+        document.getElementById('admin-save-btn').style.background = "#4A72FF";
+        document.getElementById('admin-add-product-form').classList.remove('hidden');
+        
+        // Скроллим наверх к форме
+        document.querySelector('#tab-products').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    // Кнопка "+ Добавить товар" (сбрасываем форму в режим создания)
+    document.getElementById('btn-show-add-product').onclick = () => {
+        const form = document.getElementById('admin-add-product-form');
+        form.reset();
+        document.getElementById('edit-prod-id').value = ""; // Очищаем ID
+        document.getElementById('admin-save-btn').innerText = "Сохранить";
+        document.getElementById('admin-save-btn').style.background = "#27AE60";
+        form.classList.toggle('hidden');
+    };
+
+    // Отправка формы товара (и создание, и обновление)
     document.getElementById('admin-add-product-form').onsubmit = async (e) => {
         e.preventDefault();
+        const id = document.getElementById('edit-prod-id').value;
         const name = document.getElementById('new-prod-name').value;
         const price = document.getElementById('new-prod-price').value;
         const discount = document.getElementById('new-prod-discount').value || 0;
@@ -387,24 +444,40 @@ if (isAdmin) {
         const category = document.getElementById('new-prod-cat').value;
 
         tg.HapticFeedback.notificationOccurred('success');
-        await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "add_product", name, price, discount, image, category }) });
-        e.target.reset(); e.target.classList.add('hidden');
-        await fetchData(); renderAdminProducts();
+        
+        // Если есть ID — обновляем, если нет — создаем
+        const actionType = id ? "update_product" : "add_product";
+        
+        await fetch(BACKEND_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+            body: JSON.stringify({ action: actionType, id, name, price, discount, image, category }) 
+        });
+        
+        e.target.reset(); 
+        document.getElementById('edit-prod-id').value = "";
+        e.target.classList.add('hidden');
+        await fetchData(); 
+        renderAdminProducts();
     };
 
+    // Отправка формы категории
     document.getElementById('admin-add-category-form').onsubmit = async (e) => {
         e.preventDefault();
         const name = document.getElementById('new-cat-name').value;
         tg.HapticFeedback.notificationOccurred('success');
         await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "add_category", name }) });
         e.target.reset();
-        await fetchData(); renderAdminCategories(); updateCategorySelect();
+        await fetchData(); 
+        renderAdminCategories(); 
+        updateCategorySelect();
     };
 }
 
-// Запуск
+// --- ЗАПУСК ПРИЛОЖЕНИЯ ---
 fetchData();
 updateCartUI();
+
 try {
     if (tg.CloudStorage) {
         tg.CloudStorage.getItem('tg_shop_cart', (err, value) => {
