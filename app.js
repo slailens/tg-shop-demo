@@ -1,16 +1,14 @@
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
-tg.setHeaderColor('#4A72FF');
+tg.setHeaderColor('#4A72FF'); // Сделал шапку синей, чтобы иконки были видны
 tg.setBackgroundColor('#E9ECEF');
 tg.MainButton.setParams({ color: '#4A72FF', text_color: '#ffffff' });
 
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxZ-cpm1TbzoGfbXSWOgXuYfyloZJRJsLH_SfGLVqQZIRI5pavr9iMkP6vh3HAMX7ioeQ/exec";
+const ADMIN_ID = 767941221; // Ваш ID
 
-// --- НАСТРОЙКИ АДМИНА ---
-const ADMIN_ID = 767941221; // <--- ВСТАВЬТЕ СЮДА ВАШ ID ИЗ @userinfobot
 let isAdmin = false;
-
 const user = tg.initDataUnsafe?.user;
 if (user) {
     document.getElementById('user-name').innerText = user.first_name;
@@ -20,44 +18,44 @@ if (user) {
     }
 }
 
-const categories = [
-    { id: 'clothing', name: '👕 Одежда' },
-    { id: 'accessories', name: '☕ Аксессуары' },
-    { id: 'digital', name: '💻 Цифровые' }
-];
-
-let products = []; // Теперь пустой массив, заполнится из базы
+let categories = []; 
+let products = []; 
 let cart = {};
 let isCheckoutActive = false;
+let currentCategoryId = null;
 
-// ... (Ссылки на DOM элементы, как в прошлом коде)
 const categoryListContainer = document.getElementById('category-list');
 const productList = document.getElementById('product-list');
 const pageTitle = document.getElementById('page-title');
 const categoryListView = document.getElementById('categories-view');
 const productListView = document.getElementById('products-view');
 
-// --- ЗАГРУЗКА ДАННЫХ ИЗ GOOGLE SHEETS ---
-async function fetchProducts() {
+// --- ЗАГРУЗКА ДАННЫХ ---
+async function fetchData() {
     categoryListContainer.innerHTML = '<p style="text-align:center; width:100%;">Загрузка...</p>';
     try {
-        const res = await fetch(BACKEND_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: "get_products" })
-        });
-        const data = await res.json();
-        if (data.status === 'success') {
-            products = data.products;
-            renderCategories(); // Отрисовываем категории только после загрузки товаров
-        }
+        // Загружаем категории
+        const resCat = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "get_categories" }) });
+        const dataCat = await resCat.json();
+        if(dataCat.status === 'success') categories = dataCat.categories;
+
+        // Загружаем товары
+        const resProd = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "get_products" }) });
+        const dataProd = await resProd.json();
+        if(dataProd.status === 'success') products = dataProd.products;
+
+        renderCategories(); 
     } catch (e) {
-        alert("Ошибка загрузки товаров");
+        tg.showAlert('Ошибка загрузки данных: ' + e.message);
     }
 }
 
 function renderCategories() {
     categoryListContainer.innerHTML = '';
+    if(categories.length === 0) {
+        categoryListContainer.innerHTML = '<p style="text-align:center; width:100%;">Категорий пока нет</p>';
+        return;
+    }
     categories.forEach(cat => {
         const card = document.createElement('div');
         card.className = 'category-card';
@@ -71,6 +69,7 @@ function renderCategories() {
 }
 
 function showProducts(categoryId, categoryName) {
+    currentCategoryId = categoryId;
     categoryListView.classList.add('hidden');
     productListView.classList.remove('hidden');
     pageTitle.innerText = categoryName;
@@ -84,13 +83,30 @@ function showProducts(categoryId, categoryName) {
     }
 
     filteredProducts.forEach(product => {
+        let priceHtml = '';
+        if (product.discount > 0) {
+            let oldPrice = product.price;
+            let newPrice = Math.round(oldPrice * (1 - product.discount / 100));
+            priceHtml = `
+                <div class="price-block">
+                    <span class="new-price">${newPrice} ₽</span>
+                    <span class="old-price">${oldPrice} ₽</span>
+                    <span class="discount-badge">-${product.discount}%</span>
+                </div>`;
+            // Для корзины используем цену со скидкой
+            product.finalPrice = newPrice; 
+        } else {
+            priceHtml = `<div class="price-block"><span class="new-price">${product.price} ₽</span></div>`;
+            product.finalPrice = product.price;
+        }
+
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
             <img src="${product.image}" alt="${product.name}" class="product-img">
             <div class="product-info">
                 <h3>${product.name}</h3>
-                <p>${product.price} ₽</p>
+                ${priceHtml}
             </div>
             <button class="buy-btn" data-id="${product.id}">+</button>
         `;
@@ -105,7 +121,7 @@ document.getElementById('back-to-categories').onclick = () => {
     pageTitle.innerText = 'Категории';
 };
 
-// --- КОРЗИНА (без изменений) ---
+// --- КОРЗИНА ---
 function updateCartUI() {
     if (tg.CloudStorage) tg.CloudStorage.setItem('tg_shop_cart', JSON.stringify(cart));
     localStorage.setItem('tg_shop_cart', JSON.stringify(cart));
@@ -117,11 +133,7 @@ function updateCartUI() {
     if (totalItems > 0) {
         document.getElementById('cart-total-block').classList.remove('hidden');
         document.getElementById('cart-total-price').innerText = totalPrice + ' ₽';
-        if (isCheckoutActive) {
-            tg.MainButton.setText("Подтвердить заказ");
-        } else {
-            tg.MainButton.setText(`Оформить заказ на ${totalPrice} ₽`);
-        }
+        tg.MainButton.setText(isCheckoutActive ? "Подтвердить заказ" : `Оформить заказ на ${totalPrice} ₽`);
         tg.MainButton.show();
     } else {
         document.getElementById('cart-total-block').classList.add('hidden');
@@ -135,12 +147,14 @@ function updateCartUI() {
         const product = products.find(p => p.id == id);
         if (!product) return;
         const qty = cart[id];
+        const pPrice = product.discount > 0 ? Math.round(product.price * (1 - product.discount / 100)) : product.price;
+        
         const item = document.createElement('div');
         item.className = 'cart-item';
         item.innerHTML = `
             <div class="cart-item-info">
                 <h4>${product.name}</h4>
-                <div class="cart-item-price">${product.price * qty} ₽</div>
+                <div class="cart-item-price">${pPrice * qty} ₽</div>
             </div>
             <div class="action-btns">
                 <button class="minus" onclick="changeQty('${id}', -1)">−</button>
@@ -155,7 +169,9 @@ function updateCartUI() {
 function calculateTotal() {
     return Object.keys(cart).reduce((total, id) => {
         const product = products.find(p => p.id == id);
-        return product ? total + (product.price * cart[id]) : total;
+        if(!product) return total;
+        const finalPrice = product.discount > 0 ? Math.round(product.price * (1 - product.discount / 100)) : product.price;
+        return total + (finalPrice * cart[id]);
     }, 0);
 }
 
@@ -180,10 +196,7 @@ document.getElementById('cart-icon').addEventListener('click', () => {
     tg.HapticFeedback.impactOccurred('medium');
     document.getElementById('cart-modal').classList.remove('hidden');
 });
-
-document.getElementById('close-cart').addEventListener('click', () => {
-    document.getElementById('cart-modal').classList.add('hidden');
-});
+document.getElementById('close-cart').onclick = () => document.getElementById('cart-modal').classList.add('hidden');
 
 function openCheckout() {
     isCheckoutActive = true;
@@ -191,14 +204,12 @@ function openCheckout() {
     document.getElementById('checkout-modal').classList.remove('hidden');
     updateCartUI();
 }
-
 function closeCheckout() {
     isCheckoutActive = false;
     document.getElementById('checkout-modal').classList.add('hidden');
     updateCartUI();
 }
-
-document.getElementById('close-checkout').addEventListener('click', () => closeCheckout());
+document.getElementById('close-checkout').onclick = closeCheckout;
 
 tg.MainButton.onClick(() => {
     tg.HapticFeedback.impactOccurred('heavy');
@@ -214,32 +225,26 @@ async function submitOrder() {
     const phone = document.getElementById('client-phone').value;
     const itemsToSend = Object.keys(cart).map(id => {
         const p = products.find(prod => prod.id == id);
-        return { name: p.name, price: p.price, qty: cart[id] };
+        const finalPrice = p.discount > 0 ? Math.round(p.price * (1 - p.discount / 100)) : p.price;
+        return { name: p.name, price: finalPrice, qty: cart[id] };
     });
 
     tg.MainButton.showProgress();
-    
     try {
         await fetch(BACKEND_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: "create_order", name, phone, total: calculateTotal(), items: itemsToSend, tg_user_id: user.id })
         });
-        
         tg.MainButton.hideProgress();
         tg.HapticFeedback.notificationOccurred('success');
         tg.showPopup({ title: 'Успешно!', message: 'Ваш заказ принят.', buttons: [{ type: 'ok' }] }, () => {
-            cart = {};
-            document.getElementById('order-form').reset();
-            closeCheckout();
-            updateCartUI();
-            productListView.classList.add('hidden');
-            categoryListView.classList.remove('hidden');
+            cart = {}; document.getElementById('order-form').reset();
+            closeCheckout(); updateCartUI();
+            productListView.classList.add('hidden'); categoryListView.classList.remove('hidden');
             pageTitle.innerText = 'Категории';
         });
     } catch (e) {
-        tg.MainButton.hideProgress();
-        tg.showAlert('Ошибка при отправке заказа.');
+        tg.MainButton.hideProgress(); tg.showAlert('Ошибка при отправке.');
     }
 }
 
@@ -247,20 +252,13 @@ async function submitOrder() {
 // --- ЛОГИКА АДМИН-ПАНЕЛИ ---
 // ==========================================
 if (isAdmin) {
-    const adminBtn = document.getElementById('admin-btn');
-    const adminModal = document.getElementById('admin-modal');
-    
-    adminBtn.onclick = () => {
+    document.getElementById('admin-btn').onclick = () => {
         tg.HapticFeedback.impactOccurred('medium');
-        adminModal.classList.remove('hidden');
+        document.getElementById('admin-modal').classList.remove('hidden');
         loadAdminData();
     };
+    document.getElementById('close-admin').onclick = () => document.getElementById('admin-modal').classList.add('hidden');
 
-    document.getElementById('close-admin').onclick = () => {
-        adminModal.classList.add('hidden');
-    };
-
-    // Переключение табов
     document.querySelectorAll('.admin-tab').forEach(tab => {
         tab.onclick = () => {
             document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
@@ -270,43 +268,29 @@ if (isAdmin) {
         };
     });
 
-    // Загрузка данных для админки
     async function loadAdminData() {
         // Заказы
         try {
-            const res = await fetch(BACKEND_URL, {
-                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: "get_orders" })
-            });
+            const res = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "get_orders" }) });
             const data = await res.json();
-            if (data.status === 'success') {
-                renderAdminOrders(data.orders);
-            }
+            if (data.status === 'success') renderAdminOrders(data.orders);
         } catch(e) {}
-
-        // Товары
         renderAdminProducts();
+        renderAdminCategories();
+        updateCategorySelect();
     }
 
     function renderAdminOrders(orders) {
         const list = document.getElementById('admin-orders-list');
         list.innerHTML = '';
         let totalRevenue = 0;
-
-        if (orders.length === 0) {
-            list.innerHTML = '<p style="text-align:center; color: #7F8C8D;">Заказов пока нет</p>';
-        }
-
+        if (orders.length === 0) list.innerHTML = '<p style="text-align:center; color: #7F8C8D;">Заказов пока нет</p>';
         orders.forEach(order => {
             if (order.status !== 'Отменен') totalRevenue += Number(order.total);
-            
             const card = document.createElement('div');
             card.className = 'order-admin-card';
-            
-            let itemsArr = [];
-            try { itemsArr = JSON.parse(order.items); } catch(e){}
+            let itemsArr = []; try { itemsArr = JSON.parse(order.items); } catch(e){}
             let itemsHtml = itemsArr.map(i => `${i.name} (${i.qty}шт)`).join(', ');
-
             card.innerHTML = `
                 <h4>${order.name} <span style="font-weight:normal; font-size:12px; color:#999;">${order.date}</span></h4>
                 <p>📞 ${order.phone} | 💰 <b>${order.total} ₽</b></p>
@@ -320,7 +304,6 @@ if (isAdmin) {
             `;
             list.appendChild(card);
         });
-
         document.getElementById('admin-total-revenue').innerText = totalRevenue + ' ₽';
         document.getElementById('admin-total-orders').innerText = orders.length;
     }
@@ -335,7 +318,7 @@ if (isAdmin) {
                 <div style="display:flex; align-items:center; gap:10px;">
                     <img src="${prod.image}">
                     <div class="admin-prod-info">
-                        <h5>${prod.name}</h5>
+                        <h5>${prod.name} ${prod.discount > 0 ? `<span style="color:red; font-size:10px;">(-${prod.discount}%)</span>` : ''}</h5>
                         <p>${prod.price} ₽</p>
                     </div>
                 </div>
@@ -345,62 +328,87 @@ if (isAdmin) {
         });
     }
 
-    // Глобальные функции для админки
+    function renderAdminCategories() {
+        const list = document.getElementById('admin-categories-list');
+        list.innerHTML = '';
+        categories.forEach(cat => {
+            const card = document.createElement('div');
+            card.className = 'admin-cat-card';
+            card.innerHTML = `
+                <div class="admin-prod-info"><h5>${cat.name}</h5></div>
+                <button class="del-btn" onclick="deleteCategory('${cat.id}')">Удалить</button>
+            `;
+            list.appendChild(card);
+        });
+    }
+
+    function updateCategorySelect() {
+        const select = document.getElementById('new-prod-cat');
+        select.innerHTML = '';
+        categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id; opt.innerText = cat.name;
+            select.appendChild(opt);
+        });
+    }
+
     window.updateOrderStatus = async (rowIndex, status) => {
         tg.HapticFeedback.impactOccurred('light');
-        await fetch(BACKEND_URL, {
-            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: "update_order_status", rowIndex, status })
-        });
-        loadAdminData(); // Обновляем данные
+        await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "update_order_status", rowIndex, status }) });
+        loadAdminData();
     };
 
     window.deleteProduct = async (id) => {
         if (!confirm("Удалить этот товар?")) return;
-        tg.HapticFeedback.impactOccurred('medium');
-        await fetch(BACKEND_URL, {
-            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: "delete_product", id })
-        });
-        await fetchProducts(); // Обновляем список товаров
-        renderAdminProducts();
+        await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "delete_product", id }) });
+        await fetchData(); renderAdminProducts();
     };
 
-    // Форма добавления товара
-    document.getElementById('btn-show-add-product').onclick = () => {
-        document.getElementById('admin-add-product-form').classList.toggle('hidden');
+    window.deleteCategory = async (id) => {
+        // Проверка, есть ли товары в категории
+        const hasProducts = products.some(p => p.category === id);
+        if (hasProducts) {
+            tg.showAlert("Нельзя удалить категорию, пока в ней есть товары! Сначала удалите или перенесите товары.");
+            return;
+        }
+        if (!confirm("Удалить эту категорию?")) return;
+        await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "delete_category", id }) });
+        await fetchData(); renderAdminCategories(); updateCategorySelect();
     };
+
+    document.getElementById('btn-show-add-product').onclick = () => document.getElementById('admin-add-product-form').classList.toggle('hidden');
 
     document.getElementById('admin-add-product-form').onsubmit = async (e) => {
         e.preventDefault();
         const name = document.getElementById('new-prod-name').value;
         const price = document.getElementById('new-prod-price').value;
+        const discount = document.getElementById('new-prod-discount').value || 0;
         const image = document.getElementById('new-prod-img').value;
         const category = document.getElementById('new-prod-cat').value;
 
         tg.HapticFeedback.notificationOccurred('success');
-        await fetch(BACKEND_URL, {
-            method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: "add_product", name, price, image, category })
-        });
+        await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "add_product", name, price, discount, image, category }) });
+        e.target.reset(); e.target.classList.add('hidden');
+        await fetchData(); renderAdminProducts();
+    };
 
+    document.getElementById('admin-add-category-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('new-cat-name').value;
+        tg.HapticFeedback.notificationOccurred('success');
+        await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: "add_category", name }) });
         e.target.reset();
-        e.target.classList.add('hidden');
-        await fetchProducts(); // Обновляем список
-        renderAdminProducts();
+        await fetchData(); renderAdminCategories(); updateCategorySelect();
     };
 }
 
-// --- ЗАПУСК ---
-fetchProducts();
+// Запуск
+fetchData();
 updateCartUI();
-
 try {
     if (tg.CloudStorage) {
         tg.CloudStorage.getItem('tg_shop_cart', (err, value) => {
-            if (!err && value) {
-                try { cart = JSON.parse(value); updateCartUI(); } catch(e) {}
-            }
+            if (!err && value) { try { cart = JSON.parse(value); updateCartUI(); } catch(e) {} }
         });
     } else {
         const localCart = localStorage.getItem('tg_shop_cart');
