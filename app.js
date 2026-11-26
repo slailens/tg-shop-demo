@@ -13,6 +13,12 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
     tg.ready();
     tg.expand();
 
+    // Принудительно задаем цвет главной кнопки Telegram (деловой синий)
+    tg.MainButton.setParams({
+        color: '#4A72FF',
+        text_color: '#ffffff'
+    });
+
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyFkEqdfhLkz44_ntWgH4Sd1aZznUM0avkwv2IcRg70YyIEwWN8qHD2AeV12gOw5ogV2g/exec";
 
     const user = tg.initDataUnsafe?.user;
@@ -106,7 +112,6 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
 
         const totalPrice = calculateTotal();
 
-        // Обновляем итоговую сумму в корзине
         const totalBlock = document.getElementById('cart-total-block');
         if (totalItems > 0) {
             totalBlock.classList.remove('hidden');
