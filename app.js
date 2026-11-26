@@ -13,6 +13,10 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
     tg.ready();
     tg.expand();
 
+    // Делаем верхнюю панель и фон в тон нашему приложению (#E9ECEF)
+    tg.setHeaderColor('#E9ECEF');
+    tg.setBackgroundColor('#E9ECEF');
+
     // Принудительно задаем цвет главной кнопки Telegram (деловой синий)
     tg.MainButton.setParams({
         color: '#4A72FF',
