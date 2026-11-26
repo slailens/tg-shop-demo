@@ -2,8 +2,8 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-// Вставьте сюда ваш URL из Google Apps Script
-const BACKEND_URL = "ВАШ_GOOGLE_SCRIPT_URL";
+// Ваш URL от Google Apps Script
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyFkEqdfhLkz44_ntWgH4Sd1aZznUM0avkwv2IcRg70YyIEwWN8qHD2AeV12gOw5ogV2g/exec";
 
 const user = tg.initDataUnsafe?.user;
 if (user) document.getElementById('user-name').innerText = user.first_name;
@@ -15,9 +15,8 @@ const products = [
 ];
 
 let cart = {};
-let isCheckoutActive = false; // Флаг: открыта ли форма оформления
+let isCheckoutActive = false;
 
-// DOM
 const productList = document.getElementById('product-list');
 const cartCount = document.getElementById('cart-count');
 const cartModal = document.getElementById('cart-modal');
@@ -45,7 +44,6 @@ function updateCartUI() {
     const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
     cartCount.innerText = totalItems;
 
-    // Логика нативной кнопки
     if (totalItems > 0) {
         if (isCheckoutActive) {
             tg.MainButton.setText("Подтвердить заказ");
@@ -55,11 +53,9 @@ function updateCartUI() {
         tg.MainButton.show();
     } else {
         tg.MainButton.hide();
-        // Если корзина опустела, а форма открыта — закрываем форму
         if (isCheckoutActive) closeCheckout();
     }
 
-    // Отрисовка корзины
     cartItemsContainer.innerHTML = '';
     Object.keys(cart).forEach(id => {
         const product = products.find(p => p.id == id);
@@ -112,40 +108,34 @@ document.getElementById('close-cart').addEventListener('click', () => {
     cartModal.classList.add('hidden');
 });
 
-// --- УПРАВЛЕНИЕ ЭКРАНОМ ОФОРМЛЕНИЯ ---
 function openCheckout() {
     isCheckoutActive = true;
-    cartModal.classList.add('hidden'); // Закрываем корзину
-    checkoutModal.classList.remove('hidden'); // Открываем форму
-    updateCartUI(); // Меняем текст главной кнопки на "Подтвердить"
+    cartModal.classList.add('hidden');
+    checkoutModal.classList.remove('hidden');
+    updateCartUI();
 }
 
 function closeCheckout() {
     isCheckoutActive = false;
     checkoutModal.classList.add('hidden');
-    updateCartUI(); // Возвращаем текст "Оформить заказ на X ₽"
+    updateCartUI();
 }
 
 document.getElementById('close-checkout').addEventListener('click', () => {
     closeCheckout();
 });
 
-// --- ОБРАБОТКА ГЛАВНОЙ КНОПКИ TELEGRAM ---
 tg.MainButton.onClick(() => {
     tg.HapticFeedback.impactOccurred('heavy');
-    
     if (isCheckoutActive) {
-        // Если мы на экране оформления, кнопка проверяет форму и отправляет данные
         if (orderForm.reportValidity()) {
             submitOrder();
         }
     } else {
-        // Если мы в корзине, кнопка открывает форму оформления
         openCheckout();
     }
 });
 
-// --- ОТПРАВКА ЗАКАЗА ---
 function submitOrder() {
     const name = document.getElementById('client-name').value;
     const phone = document.getElementById('client-phone').value;
@@ -162,7 +152,7 @@ function submitOrder() {
         items: itemsToSend
     };
 
-    tg.MainButton.showProgress(); // Включаем кружочек загрузки на кнопке
+    tg.MainButton.showProgress();
     
     fetch(BACKEND_URL, {
         method: 'POST',
@@ -178,7 +168,6 @@ function submitOrder() {
                 message: 'Ваш заказ принят. Мы свяжемся с вами.',
                 buttons: [{ type: 'ok' }]
             }, () => {
-                // Очищаем корзину и возвращаемся на главную
                 cart = {};
                 orderForm.reset();
                 closeCheckout();
