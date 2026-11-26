@@ -4,15 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мини-магазин</title>
-    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="style.css?v=6">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
     <header>
         <div class="header-top">
             <h1 id="page-title">Категории</h1>
-            <div class="cart-icon" id="cart-icon">
-                🛒 <span id="cart-count">0</span>
+            <div style="display: flex; gap: 8px;">
+                <!-- Кнопка админки (появится только у админа) -->
+                <div class="cart-icon hidden" id="admin-btn" style="background: #2C3E50; color: white;">⚙️</div>
+                <div class="cart-icon" id="cart-icon">
+                    🛒 <span id="cart-count">0</span>
+                </div>
             </div>
         </div>
         <p>Привет, <span id="user-name">гость</span>! Что будем покупать?</p>
@@ -27,6 +31,7 @@
         <div id="product-list"></div>
     </main>
 
+    <!-- Модалка Корзины -->
     <div id="cart-modal" class="hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -41,6 +46,7 @@
         </div>
     </div>
 
+    <!-- Модалка Оформления -->
     <div id="checkout-modal" class="hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -60,6 +66,59 @@
         </div>
     </div>
 
-    <script src="app.js?v=5"></script>
+    <!-- МОДАЛКА АДМИН-ПАНЕЛИ -->
+    <div id="admin-modal" class="hidden">
+        <div class="modal-content" style="height: 90vh; background: #F4F6F8;">
+            <div class="modal-header">
+                <h2>Админ-панель</h2>
+                <button id="close-admin" class="close-btn">✖</button>
+            </div>
+            
+            <!-- Табы -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="tab-stats">📊 Статистика</button>
+                <button class="admin-tab" data-tab="tab-orders">📦 Заказы</button>
+                <button class="admin-tab" data-tab="tab-products">👕 Товары</button>
+            </div>
+
+            <!-- Вкладка: Статистика -->
+            <div id="tab-stats" class="admin-tab-content">
+                <div class="stats-card">
+                    <h3>Общая выручка</h3>
+                    <p id="admin-total-revenue">0 ₽</p>
+                </div>
+                <div class="stats-card">
+                    <h3>Всего заказов</h3>
+                    <p id="admin-total-orders">0</p>
+                </div>
+            </div>
+
+            <!-- Вкладка: Заказы -->
+            <div id="tab-orders" class="admin-tab-content hidden">
+                <div id="admin-orders-list"></div>
+            </div>
+
+            <!-- Вкладка: Товары -->
+            <div id="tab-products" class="admin-tab-content hidden">
+                <button id="btn-show-add-product" class="buy-btn" style="width: 100%; border-radius: 8px; margin-bottom: 15px; font-size: 16px;">+ Добавить товар</button>
+                
+                <form id="admin-add-product-form" class="hidden" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
+                    <input type="text" id="new-prod-name" placeholder="Название" required style="width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                    <input type="number" id="new-prod-price" placeholder="Цена (₽)" required style="width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                    <input type="text" id="new-prod-img" placeholder="Ссылка на фото (URL)" required style="width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                    <select id="new-prod-cat" style="width: 100%; margin-bottom: 12px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                        <option value="clothing">Одежда</option>
+                        <option value="accessories">Аксессуары</option>
+                        <option value="digital">Цифровые</option>
+                    </select>
+                    <button type="submit" style="width: 100%; padding: 10px; background: #27AE60; color: white; border: none; border-radius: 6px;">Сохранить</button>
+                </form>
+
+                <div id="admin-products-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=6"></script>
 </body>
 </html>
