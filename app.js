@@ -2,8 +2,8 @@ const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
 
-// Вставьте сюда ваш URL из Google Apps Script (который заканчивается на /exec)
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyFkEqdfhLkz44_ntWgH4Sd1aZznUM0avkwv2IcRg70YyIEwWN8qHD2AeV12gOw5ogV2g/exec";
+// Вставьте сюда ваш URL из Google Apps Script
+const BACKEND_URL = "ВАШ_GOOGLE_SCRIPT_URL";
 
 const user = tg.initDataUnsafe?.user;
 if (user) document.getElementById('user-name').innerText = user.first_name;
@@ -15,6 +15,7 @@ const products = [
 ];
 
 let cart = {};
+let isCheckoutActive = false; // Флаг: открыта ли форма оформления
 
 // DOM
 const productList = document.getElementById('product-list');
@@ -22,6 +23,7 @@ const cartCount = document.getElementById('cart-count');
 const cartModal = document.getElementById('cart-modal');
 const cartItemsContainer = document.getElementById('cart-items');
 const checkoutModal = document.getElementById('checkout-modal');
+const orderForm = document.getElementById('order-form');
 
 function renderProducts() {
     productList.innerHTML = '';
@@ -43,13 +45,21 @@ function updateCartUI() {
     const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
     cartCount.innerText = totalItems;
 
+    // Логика нативной кнопки
     if (totalItems > 0) {
-        tg.MainButton.setText(`Оформить заказ на ${calculateTotal()} ₽`);
+        if (isCheckoutActive) {
+            tg.MainButton.setText("Подтвердить заказ");
+        } else {
+            tg.MainButton.setText(`Оформить заказ на ${calculateTotal()} ₽`);
+        }
         tg.MainButton.show();
     } else {
         tg.MainButton.hide();
+        // Если корзина опустела, а форма открыта — закрываем форму
+        if (isCheckoutActive) closeCheckout();
     }
 
+    // Отрисовка корзины
     cartItemsContainer.innerHTML = '';
     Object.keys(cart).forEach(id => {
         const product = products.find(p => p.id == id);
@@ -102,26 +112,44 @@ document.getElementById('close-cart').addEventListener('click', () => {
     cartModal.classList.add('hidden');
 });
 
-// Главная кнопка теперь открывает форму оформления
+// --- УПРАВЛЕНИЕ ЭКРАНОМ ОФОРМЛЕНИЯ ---
+function openCheckout() {
+    isCheckoutActive = true;
+    cartModal.classList.add('hidden'); // Закрываем корзину
+    checkoutModal.classList.remove('hidden'); // Открываем форму
+    updateCartUI(); // Меняем текст главной кнопки на "Подтвердить"
+}
+
+function closeCheckout() {
+    isCheckoutActive = false;
+    checkoutModal.classList.add('hidden');
+    updateCartUI(); // Возвращаем текст "Оформить заказ на X ₽"
+}
+
+document.getElementById('close-checkout').addEventListener('click', () => {
+    closeCheckout();
+});
+
+// --- ОБРАБОТКА ГЛАВНОЙ КНОПКИ TELEGRAM ---
 tg.MainButton.onClick(() => {
     tg.HapticFeedback.impactOccurred('heavy');
-    cartModal.classList.add('hidden'); // Закрываем корзину, если открыта
-    checkoutModal.classList.remove('hidden'); // Открываем форму
-});
-
-// Закрытие формы
-document.getElementById('close-checkout').addEventListener('click', () => {
-    checkoutModal.classList.add('hidden');
-});
-
-// ОТПРАВКА ЗАКАЗА НА СЕРВЕР
-document.getElementById('order-form').addEventListener('submit', (e) => {
-    e.preventDefault();
     
+    if (isCheckoutActive) {
+        // Если мы на экране оформления, кнопка проверяет форму и отправляет данные
+        if (orderForm.reportValidity()) {
+            submitOrder();
+        }
+    } else {
+        // Если мы в корзине, кнопка открывает форму оформления
+        openCheckout();
+    }
+});
+
+// --- ОТПРАВКА ЗАКАЗА ---
+function submitOrder() {
     const name = document.getElementById('client-name').value;
     const phone = document.getElementById('client-phone').value;
     
-    // Собираем массив товаров для отправки
     const itemsToSend = Object.keys(cart).map(id => {
         const p = products.find(prod => prod.id == id);
         return { name: p.name, price: p.price, qty: cart[id] };
@@ -134,10 +162,8 @@ document.getElementById('order-form').addEventListener('submit', (e) => {
         items: itemsToSend
     };
 
-    // Показываем загрузку
-    tg.MainButton.showProgress();
+    tg.MainButton.showProgress(); // Включаем кружочек загрузки на кнопке
     
-    // Отправляем данные в Google Apps Script
     fetch(BACKEND_URL, {
         method: 'POST',
         body: JSON.stringify(orderData)
@@ -152,11 +178,11 @@ document.getElementById('order-form').addEventListener('submit', (e) => {
                 message: 'Ваш заказ принят. Мы свяжемся с вами.',
                 buttons: [{ type: 'ok' }]
             }, () => {
-                // Очищаем корзину после успешного заказа
+                // Очищаем корзину и возвращаемся на главную
                 cart = {};
+                orderForm.reset();
+                closeCheckout();
                 updateCartUI();
-                checkoutModal.classList.add('hidden');
-                document.getElementById('order-form').reset();
             });
         } else {
             throw new Error('Ошибка сервера');
@@ -167,7 +193,7 @@ document.getElementById('order-form').addEventListener('submit', (e) => {
         tg.HapticFeedback.notificationOccurred('error');
         tg.showAlert('Произошла ошибка при отправке. Попробуйте позже.');
     });
-});
+}
 
 renderProducts();
 updateCartUI();
