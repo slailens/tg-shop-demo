@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мини-магазин</title>
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=11">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -12,6 +12,7 @@
         <div class="header-top">
             <h1 id="page-title">Категории</h1>
             <div style="display: flex; gap: 8px;">
+                <!-- Кнопка админки (появится только у админа) -->
                 <div class="cart-icon hidden" id="admin-btn" style="background: #2C3E50; color: white;">⚙️</div>
                 <div class="cart-icon" id="cart-icon">
                     🛒 <span id="cart-count">0</span>
@@ -21,16 +22,18 @@
         <p>Привет, <span id="user-name">гость</span>! Что будем покупать?</p>
     </header>
 
+    <!-- Экран 1: Категории -->
     <main id="categories-view">
         <div id="category-list" class="category-grid"></div>
     </main>
 
+    <!-- Экран 2: Товары в категории -->
     <main id="products-view" class="hidden">
         <button id="back-to-categories" class="back-btn">← Назад</button>
         <div id="product-list"></div>
     </main>
 
-    <!-- Корзина -->
+    <!-- Модальное окно Корзины -->
     <div id="cart-modal" class="hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -45,7 +48,7 @@
         </div>
     </div>
 
-    <!-- Оформление -->
+    <!-- Модальное окно Оформления -->
     <div id="checkout-modal" class="hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -65,7 +68,7 @@
         </div>
     </div>
 
-    <!-- АДМИН-ПАНЕЛЬ -->
+    <!-- МОДАЛЬНОЕ ОКНО АДМИН-ПАНЕЛИ -->
     <div id="admin-modal" class="hidden">
         <div class="modal-content" style="height: 90vh; background: #F4F6F8;">
             <div class="modal-header">
@@ -73,6 +76,7 @@
                 <button id="close-admin" class="close-btn">✖</button>
             </div>
             
+            <!-- Навигация по вкладкам -->
             <div class="admin-tabs">
                 <button class="admin-tab active" data-tab="tab-stats">📊 Статистика</button>
                 <button class="admin-tab" data-tab="tab-orders">📦 Заказы</button>
@@ -80,7 +84,7 @@
                 <button class="admin-tab" data-tab="tab-categories">📁 Категории</button>
             </div>
 
-            <!-- Статистика -->
+            <!-- Вкладка: Статистика -->
             <div id="tab-stats" class="admin-tab-content">
                 <div class="stats-card">
                     <h3>Общая выручка</h3>
@@ -92,31 +96,34 @@
                 </div>
             </div>
 
-            <!-- Заказы -->
+            <!-- Вкладка: Заказы -->
             <div id="tab-orders" class="admin-tab-content hidden">
                 <div id="admin-orders-list"></div>
             </div>
 
-            <!-- Товары -->
+            <!-- Вкладка: Товары -->
             <div id="tab-products" class="admin-tab-content hidden">
-                <button id="btn-show-add-product" class="buy-btn" style="width: 100%; border-radius: 8px; margin-bottom: 15px; font-size: 16px;">+ Добавить товар</button>
+                <button id="btn-show-add-product" class="buy-btn" style="width: 100%; border-radius: 8px; margin-bottom: 15px; font-size: 16px; height: auto; padding: 12px;">+ Добавить товар</button>
                 
                 <form id="admin-add-product-form" class="hidden admin-form">
+                    <!-- СКРЫТОЕ ПОЛЕ ДЛЯ ID (нужно для редактирования) -->
+                    <input type="hidden" id="edit-prod-id" value="">
+                    
                     <input type="text" id="new-prod-name" placeholder="Название" required class="admin-input">
                     <input type="number" id="new-prod-price" placeholder="Цена (₽)" required class="admin-input">
                     <input type="number" id="new-prod-discount" placeholder="Скидка (%)" value="0" min="0" max="99" class="admin-input">
                     <input type="text" id="new-prod-img" placeholder="Ссылка на фото (URL)" required class="admin-input">
                     <select id="new-prod-cat" class="admin-input" required></select>
-                    <button type="submit" class="admin-btn-save">Сохранить</button>
+                    <button type="submit" id="admin-save-btn" class="admin-btn-save">Сохранить</button>
                 </form>
 
                 <div id="admin-products-list"></div>
             </div>
 
-            <!-- Категории -->
+            <!-- Вкладка: Категории -->
             <div id="tab-categories" class="admin-tab-content hidden">
                 <form id="admin-add-category-form" class="admin-form" style="margin-bottom: 20px;">
-                    <input type="text" id="new-cat-name" placeholder="Название категории (например, 🎁 Подарки)" required class="admin-input">
+                    <input type="text" id="new-cat-name" placeholder="Название (например, 🎁 Подарки)" required class="admin-input">
                     <button type="submit" class="admin-btn-save">Добавить категорию</button>
                 </form>
                 <div id="admin-categories-list"></div>
@@ -124,6 +131,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=10"></script>
+    <!-- Версия обновлена до 11 -->
+    <script src="app.js?v=11"></script>
 </body>
 </html>
