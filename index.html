@@ -10,7 +10,7 @@
 <body>
     <header>
         <div class="header-top">
-            <h1>Магазин</h1>
+            <h1 id="page-title">Категории</h1>
             <div class="cart-icon" id="cart-icon">
                 🛒 <span id="cart-count">0</span>
             </div>
@@ -18,8 +18,15 @@
         <p>Привет, <span id="user-name">гость</span>!</p>
     </header>
 
-    <main id="product-list">
-        <!-- Товары будут добавлены через JavaScript -->
+    <!-- Экран 1: Категории -->
+    <main id="categories-view">
+        <div id="category-list" class="category-grid"></div>
+    </main>
+
+    <!-- Экран 2: Товары в категории -->
+    <main id="products-view" class="hidden">
+        <button id="back-to-categories" class="back-btn">← Назад к категориям</button>
+        <div id="product-list"></div>
     </main>
 
     <!-- Модальное окно корзины -->
