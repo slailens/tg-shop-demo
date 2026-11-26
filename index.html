@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мини-магазин</title>
-    <!-- Добавлено ?v=2, чтобы сбросить кэш Telegram -->
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -16,45 +15,55 @@
                 🛒 <span id="cart-count">0</span>
             </div>
         </div>
-        <p>Привет, <span id="user-name">гость</span>!</p>
+        <p>Привет, <span id="user-name">гость</span>! Что будем покупать?</p>
     </header>
 
     <!-- Экран 1: Категории -->
     <main id="categories-view">
-        <!-- Текст ниже виден только если JS не сработал -->
-        <div id="category-list" class="category-grid">
-            <p style="color: red; padding: 20px;">Загрузка категорий... Если вы видите этот текст, значит app.js не загрузился.</p>
-        </div>
+        <div id="category-list" class="category-grid"></div>
     </main>
 
     <!-- Экран 2: Товары в категории -->
     <main id="products-view" class="hidden">
-        <button id="back-to-categories" class="back-btn">← Назад к категориям</button>
+        <button id="back-to-categories" class="back-btn">← Назад</button>
         <div id="product-list"></div>
     </main>
 
     <!-- Модальное окно корзины -->
     <div id="cart-modal" class="hidden">
-        <div class="cart-header">
-            <h2>Ваша корзина</h2>
-            <button id="close-cart" class="close-btn">✖</button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Корзина</h2>
+                <button id="close-cart" class="close-btn">✖</button>
+            </div>
+            <div id="cart-items" class="cart-items-list"></div>
+            <div id="cart-total-block" class="cart-total-block hidden">
+                <span>Итого:</span>
+                <span id="cart-total-price">0 ₽</span>
+            </div>
         </div>
-        <div id="cart-items"></div>
     </div>
 
     <!-- Модальное окно оформления заказа -->
     <div id="checkout-modal" class="hidden">
-        <div class="cart-header">
-            <h2>Оформление заказа</h2>
-            <button id="close-checkout" class="close-btn">✖</button>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Оформление</h2>
+                <button id="close-checkout" class="close-btn">✖</button>
+            </div>
+            <form id="order-form" class="order-form">
+                <div class="input-group">
+                    <label>Ваше имя</label>
+                    <input type="text" id="client-name" placeholder="Иван" required>
+                </div>
+                <div class="input-group">
+                    <label>Номер телефона</label>
+                    <input type="tel" id="client-phone" placeholder="+7 (999) 000-00-00" required>
+                </div>
+            </form>
         </div>
-        <form id="order-form" style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
-            <input type="text" id="client-name" placeholder="Ваше имя" required style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px;">
-            <input type="tel" id="client-phone" placeholder="Ваш телефон" required style="padding: 12px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px;">
-        </form>
     </div>
 
-    <!-- Добавлено ?v=2, чтобы сбросить кэш Telegram -->
-    <script src="app.js?v=2"></script>
+    <script src="app.js?v=3"></script>
 </body>
 </html>
