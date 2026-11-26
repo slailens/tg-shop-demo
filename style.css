@@ -1,12 +1,12 @@
-/* Фиксированная пастельная палитра */
+/* Деловая пастельная палитра */
 :root {
-    --bg-color: #F4F6F8;          /* Мягкий серый фон */
+    --bg-color: #E9ECEF;          /* Более заметный светло-серый фон */
     --card-bg: #FFFFFF;           /* Белые карточки */
-    --text-main: #2D3748;         /* Темно-графитовый текст */
-    --text-muted: #718096;        /* Серый текст */
-    --accent-blue: #4A72FF;       /* Деловой синий */
-    --accent-green: #10B981;      /* Изумрудный для цен */
-    --border-color: #E2E8F0;      /* Светлые границы */
+    --text-main: #2C3E50;         /* Темно-синий графит */
+    --text-muted: #7F8C8D;        /* Серый */
+    --accent-blue: #4A72FF;       /* Синий */
+    --accent-green: #27AE60;      /* Зеленый для цен */
+    --border-color: #D1D8DD;      /* Контурные линии */
     --card-radius: 16px;
     --transition: all 0.2s ease-in-out;
 }
@@ -40,7 +40,7 @@ header p { font-size: 14px; color: var(--text-muted); font-weight: 500; }
     gap: 6px;
     font-weight: 700;
     color: var(--text-main);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     border: 1px solid var(--border-color);
     transition: var(--transition);
 }
@@ -63,7 +63,7 @@ header p { font-size: 14px; color: var(--text-muted); font-weight: 500; }
     font-size: 15px;
     color: var(--text-main);
     transition: var(--transition);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
 }
 .category-card:active {
     transform: scale(0.96);
@@ -80,12 +80,12 @@ header p { font-size: 14px; color: var(--text-muted); font-weight: 500; }
     display: flex;
     align-items: center;
     gap: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
 }
 .product-img {
     width: 75px; height: 75px;
     border-radius: 12px; object-fit: cover;
-    background-color: #EDF2F7;
+    background-color: #E9ECEF;
 }
 .product-info { flex-grow: 1; }
 .product-info h3 { font-size: 15px; margin-bottom: 6px; font-weight: 600; line-height: 1.2; color: var(--text-main); }
@@ -102,7 +102,7 @@ header p { font-size: 14px; color: var(--text-muted); font-weight: 500; }
     display: flex; justify-content: center; align-items: center;
     cursor: pointer;
     transition: var(--transition);
-    box-shadow: 0 4px 10px rgba(74, 114, 255, 0.2);
+    box-shadow: 0 4px 10px rgba(74, 114, 255, 0.3);
     padding-bottom: 2px;
 }
 .buy-btn:active { transform: scale(0.9); opacity: 0.8; }
@@ -121,7 +121,7 @@ header p { font-size: 14px; color: var(--text-muted); font-weight: 500; }
 .hidden { display: none !important; }
 #cart-modal, #checkout-modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(45, 55, 72, 0.4); /* Полупрозрачный графит */
+    background: rgba(44, 62, 80, 0.5); /* Затемнение */
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     z-index: 100;
