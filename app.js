@@ -1,7 +1,7 @@
 const tg = window.Telegram.WebApp;
 tg.ready();
 tg.expand();
-tg.setHeaderColor('#E9ECEF');
+tg.setHeaderColor('#4A72FF');
 tg.setBackgroundColor('#E9ECEF');
 tg.MainButton.setParams({ color: '#4A72FF', text_color: '#ffffff' });
 
