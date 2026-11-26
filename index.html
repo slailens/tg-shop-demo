@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мини-магазин</title>
-    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="style.css?v=10">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -12,7 +12,6 @@
         <div class="header-top">
             <h1 id="page-title">Категории</h1>
             <div style="display: flex; gap: 8px;">
-                <!-- Кнопка админки (появится только у админа) -->
                 <div class="cart-icon hidden" id="admin-btn" style="background: #2C3E50; color: white;">⚙️</div>
                 <div class="cart-icon" id="cart-icon">
                     🛒 <span id="cart-count">0</span>
@@ -31,7 +30,7 @@
         <div id="product-list"></div>
     </main>
 
-    <!-- Модалка Корзины -->
+    <!-- Корзина -->
     <div id="cart-modal" class="hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -46,7 +45,7 @@
         </div>
     </div>
 
-    <!-- Модалка Оформления -->
+    <!-- Оформление -->
     <div id="checkout-modal" class="hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -66,7 +65,7 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА АДМИН-ПАНЕЛИ -->
+    <!-- АДМИН-ПАНЕЛЬ -->
     <div id="admin-modal" class="hidden">
         <div class="modal-content" style="height: 90vh; background: #F4F6F8;">
             <div class="modal-header">
@@ -74,14 +73,14 @@
                 <button id="close-admin" class="close-btn">✖</button>
             </div>
             
-            <!-- Табы -->
             <div class="admin-tabs">
                 <button class="admin-tab active" data-tab="tab-stats">📊 Статистика</button>
                 <button class="admin-tab" data-tab="tab-orders">📦 Заказы</button>
                 <button class="admin-tab" data-tab="tab-products">👕 Товары</button>
+                <button class="admin-tab" data-tab="tab-categories">📁 Категории</button>
             </div>
 
-            <!-- Вкладка: Статистика -->
+            <!-- Статистика -->
             <div id="tab-stats" class="admin-tab-content">
                 <div class="stats-card">
                     <h3>Общая выручка</h3>
@@ -93,32 +92,38 @@
                 </div>
             </div>
 
-            <!-- Вкладка: Заказы -->
+            <!-- Заказы -->
             <div id="tab-orders" class="admin-tab-content hidden">
                 <div id="admin-orders-list"></div>
             </div>
 
-            <!-- Вкладка: Товары -->
+            <!-- Товары -->
             <div id="tab-products" class="admin-tab-content hidden">
                 <button id="btn-show-add-product" class="buy-btn" style="width: 100%; border-radius: 8px; margin-bottom: 15px; font-size: 16px;">+ Добавить товар</button>
                 
-                <form id="admin-add-product-form" class="hidden" style="background: white; padding: 15px; border-radius: 12px; margin-bottom: 15px;">
-                    <input type="text" id="new-prod-name" placeholder="Название" required style="width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-                    <input type="number" id="new-prod-price" placeholder="Цена (₽)" required style="width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-                    <input type="text" id="new-prod-img" placeholder="Ссылка на фото (URL)" required style="width: 100%; margin-bottom: 8px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-                    <select id="new-prod-cat" style="width: 100%; margin-bottom: 12px; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
-                        <option value="clothing">Одежда</option>
-                        <option value="accessories">Аксессуары</option>
-                        <option value="digital">Цифровые</option>
-                    </select>
-                    <button type="submit" style="width: 100%; padding: 10px; background: #27AE60; color: white; border: none; border-radius: 6px;">Сохранить</button>
+                <form id="admin-add-product-form" class="hidden admin-form">
+                    <input type="text" id="new-prod-name" placeholder="Название" required class="admin-input">
+                    <input type="number" id="new-prod-price" placeholder="Цена (₽)" required class="admin-input">
+                    <input type="number" id="new-prod-discount" placeholder="Скидка (%)" value="0" min="0" max="99" class="admin-input">
+                    <input type="text" id="new-prod-img" placeholder="Ссылка на фото (URL)" required class="admin-input">
+                    <select id="new-prod-cat" class="admin-input" required></select>
+                    <button type="submit" class="admin-btn-save">Сохранить</button>
                 </form>
 
                 <div id="admin-products-list"></div>
             </div>
+
+            <!-- Категории -->
+            <div id="tab-categories" class="admin-tab-content hidden">
+                <form id="admin-add-category-form" class="admin-form" style="margin-bottom: 20px;">
+                    <input type="text" id="new-cat-name" placeholder="Название категории (например, 🎁 Подарки)" required class="admin-input">
+                    <button type="submit" class="admin-btn-save">Добавить категорию</button>
+                </form>
+                <div id="admin-categories-list"></div>
+            </div>
         </div>
     </div>
 
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>
