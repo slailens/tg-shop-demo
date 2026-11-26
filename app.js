@@ -5,7 +5,7 @@ tg.setHeaderColor('#E9ECEF');
 tg.setBackgroundColor('#E9ECEF');
 tg.MainButton.setParams({ color: '#4A72FF', text_color: '#ffffff' });
 
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyFkEqdfhLkz44_ntWgH4Sd1aZznUM0avkwv2IcRg70YyIEwWN8qHD2AeV12gOw5ogV2g/exec";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbxZ-cpm1TbzoGfbXSWOgXuYfyloZJRJsLH_SfGLVqQZIRI5pavr9iMkP6vh3HAMX7ioeQ/exec";
 
 // --- НАСТРОЙКИ АДМИНА ---
 const ADMIN_ID = 767941221; // <--- ВСТАВЬТЕ СЮДА ВАШ ID ИЗ @userinfobot
