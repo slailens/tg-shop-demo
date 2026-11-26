@@ -13,8 +13,7 @@ const products = [
     { id: 3, name: 'Цифровой гайд', price: 500 },
 ];
 
-// Загружаем корзину из памяти Telegram/Браузера, если она там есть
-let cart = JSON.parse(localStorage.getItem('tg_shop_cart')) || {};
+let cart = {};
 let isCheckoutActive = false;
 
 const productList = document.getElementById('product-list');
@@ -23,6 +22,28 @@ const cartModal = document.getElementById('cart-modal');
 const cartItemsContainer = document.getElementById('cart-items');
 const checkoutModal = document.getElementById('checkout-modal');
 const orderForm = document.getElementById('order-form');
+
+// --- ИНИЦИАЛИЗАЦИЯ И ЗАГРУЗКА КОРЗИНЫ ---
+// Используем CloudStorage Telegram, чтобы корзина не терялась при закрытии
+function initApp() {
+    if (tg.CloudStorage) {
+        tg.CloudStorage.getItem('tg_shop_cart', (err, value) => {
+            if (!err && value) {
+                try { cart = JSON.parse(value); } catch(e) {}
+            } else {
+                // Резервный вариант, если облако пустое
+                cart = JSON.parse(localStorage.getItem('tg_shop_cart')) || {};
+            }
+            renderProducts();
+            updateCartUI();
+        });
+    } else {
+        // Если у пользователя очень старая версия Telegram
+        cart = JSON.parse(localStorage.getItem('tg_shop_cart')) || {};
+        renderProducts();
+        updateCartUI();
+    }
+}
 
 function renderProducts() {
     productList.innerHTML = '';
@@ -41,7 +62,11 @@ function renderProducts() {
 }
 
 function updateCartUI() {
-    // Сохраняем корзину в память при каждом изменении
+    // Сохраняем в CloudStorage Telegram
+    if (tg.CloudStorage) {
+        tg.CloudStorage.setItem('tg_shop_cart', JSON.stringify(cart));
+    }
+    // И дублируем в localStorage (для подстраховки)
     localStorage.setItem('tg_shop_cart', JSON.stringify(cart));
 
     const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
@@ -62,6 +87,7 @@ function updateCartUI() {
     cartItemsContainer.innerHTML = '';
     Object.keys(cart).forEach(id => {
         const product = products.find(p => p.id == id);
+        if (!product) return; // Защита от удаленных товаров
         const qty = cart[id];
         const item = document.createElement('div');
         item.className = 'cart-item';
@@ -81,6 +107,7 @@ function updateCartUI() {
 function calculateTotal() {
     return Object.keys(cart).reduce((total, id) => {
         const product = products.find(p => p.id == id);
+        if (!product) return total;
         return total + (product.price * cart[id]);
     }, 0);
 }
@@ -145,15 +172,16 @@ function submitOrder() {
     
     const itemsToSend = Object.keys(cart).map(id => {
         const p = products.find(prod => prod.id == id);
+        if (!p) return null;
         return { name: p.name, price: p.price, qty: cart[id] };
-    });
+    }).filter(item => item !== null);
 
     const orderData = {
         name: name,
         phone: phone,
         total: calculateTotal(),
         items: itemsToSend,
-        tg_user_id: user ? user.id : null // Передаем Telegram ID клиента
+        tg_user_id: user ? user.id : null
     };
 
     tg.MainButton.showProgress();
@@ -176,7 +204,7 @@ function submitOrder() {
             cart = {};
             orderForm.reset();
             closeCheckout();
-            updateCartUI(); // Корзина очистится и в localStorage
+            updateCartUI(); // Очистит корзину и в облаке
         });
     })
     .catch(error => {
@@ -186,5 +214,5 @@ function submitOrder() {
     });
 }
 
-renderProducts();
-updateCartUI();
+// Запускаем приложение
+initApp();
