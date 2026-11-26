@@ -3,7 +3,7 @@ tg.ready();
 tg.expand();
 
 // Вставьте сюда ваш URL из Google Apps Script (который заканчивается на /exec)
-const BACKEND_URL = "ВАШ_GOOGLE_SCRIPT_URL";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyFkEqdfhLkz44_ntWgH4Sd1aZznUM0avkwv2IcRg70YyIEwWN8qHD2AeV12gOw5ogV2g/exec";
 
 const user = tg.initDataUnsafe?.user;
 if (user) document.getElementById('user-name').innerText = user.first_name;
