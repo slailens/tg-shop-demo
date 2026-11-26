@@ -1,18 +1,14 @@
-// Глобальный перехватчик ошибок
 window.onerror = function(message, source, lineno, colno, error) {
     document.body.innerHTML = `<div style="color: white; padding: 20px; font-size: 16px; background: #cc0000; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 9999; overflow: auto;">
         <h2>Ошибка в коде!</h2>
         <p><b>Текст:</b> ${message}</p>
         <p><b>Строка:</b> ${lineno}</p>
-        <p>Пожалуйста, сделайте скриншот этого экрана и покажите разработчику.</p>
     </div>`;
 };
 
-// Проверяем, загрузился ли Telegram WebApp
 if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
-    document.body.innerHTML = '<h1 style="color:red; padding:20px;">Ошибка: Скрипт Telegram не загрузился. Проверьте интернет.</h1>';
+    document.body.innerHTML = '<h1 style="color:red; padding:20px;">Ошибка: Скрипт Telegram не загрузился.</h1>';
 } else {
-    // Основной код
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
@@ -28,7 +24,7 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
     const categories = [
         { id: 'clothing', name: '👕 Одежда' },
         { id: 'accessories', name: '☕ Аксессуары' },
-        { id: 'digital', name: '💻 Цифровые товары' }
+        { id: 'digital', name: '💻 Цифровые' }
     ];
 
     const products = [
@@ -56,7 +52,7 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
     const productListView = document.getElementById('products-view');
 
     function renderCategories() {
-        categoryListContainer.innerHTML = ''; // Очищаем надпись "Загрузка..."
+        categoryListContainer.innerHTML = '';
         categories.forEach(cat => {
             const card = document.createElement('div');
             card.className = 'category-card';
@@ -108,11 +104,22 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
         const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
         document.getElementById('cart-count').innerText = totalItems;
 
+        const totalPrice = calculateTotal();
+
+        // Обновляем итоговую сумму в корзине
+        const totalBlock = document.getElementById('cart-total-block');
+        if (totalItems > 0) {
+            totalBlock.classList.remove('hidden');
+            document.getElementById('cart-total-price').innerText = totalPrice + ' ₽';
+        } else {
+            totalBlock.classList.add('hidden');
+        }
+
         if (totalItems > 0) {
             if (isCheckoutActive) {
                 tg.MainButton.setText("Подтвердить заказ");
             } else {
-                tg.MainButton.setText(`Оформить заказ на ${calculateTotal()} ₽`);
+                tg.MainButton.setText(`Оформить заказ на ${totalPrice} ₽`);
             }
             tg.MainButton.show();
         } else {
@@ -129,11 +136,13 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
             const item = document.createElement('div');
             item.className = 'cart-item';
             item.innerHTML = `
-                <div class="cart-item-info"><h4>${product.name}</h4></div>
-                <div class="cart-item-price">${product.price * qty} ₽</div>
+                <div class="cart-item-info">
+                    <h4>${product.name}</h4>
+                    <div class="cart-item-price">${product.price * qty} ₽</div>
+                </div>
                 <div class="action-btns">
-                    <button class="minus" onclick="changeQty(${id}, -1)">-</button>
-                    <span style="padding: 10px;">${qty}</span>
+                    <button class="minus" onclick="changeQty(${id}, -1)">−</button>
+                    <span>${qty}</span>
                     <button onclick="changeQty(${id}, 1)">+</button>
                 </div>
             `;
@@ -227,7 +236,7 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
             tg.MainButton.hideProgress();
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             tg.showPopup({
-                title: 'Успешно!', message: 'Ваш заказ принят.',
+                title: 'Успешно!', message: 'Ваш заказ принят. Мы свяжемся с вами.',
                 buttons: [{ type: 'ok' }]
             }, () => {
                 cart = {};
@@ -242,11 +251,10 @@ if (typeof window.Telegram === 'undefined' || !window.Telegram.WebApp) {
         .catch(error => {
             tg.MainButton.hideProgress();
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-            tg.showAlert('Ошибка сети.');
+            tg.showAlert('Ошибка сети. Попробуйте позже.');
         });
     }
 
-    // Запуск
     renderCategories();
     updateCartUI();
 
