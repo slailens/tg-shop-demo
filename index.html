@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мини-магазин</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -18,18 +18,15 @@
         <p>Привет, <span id="user-name">гость</span>! Что будем покупать?</p>
     </header>
 
-    <!-- Экран 1: Категории -->
     <main id="categories-view">
         <div id="category-list" class="category-grid"></div>
     </main>
 
-    <!-- Экран 2: Товары в категории -->
     <main id="products-view" class="hidden">
         <button id="back-to-categories" class="back-btn">← Назад</button>
         <div id="product-list"></div>
     </main>
 
-    <!-- Модальное окно корзины -->
     <div id="cart-modal" class="hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -44,7 +41,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно оформления заказа -->
     <div id="checkout-modal" class="hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -64,6 +60,6 @@
         </div>
     </div>
 
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>
