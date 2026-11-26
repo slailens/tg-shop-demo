@@ -13,7 +13,8 @@ const products = [
     { id: 3, name: 'Цифровой гайд', price: 500 },
 ];
 
-let cart = {};
+// Загружаем корзину из памяти Telegram/Браузера, если она там есть
+let cart = JSON.parse(localStorage.getItem('tg_shop_cart')) || {};
 let isCheckoutActive = false;
 
 const productList = document.getElementById('product-list');
@@ -40,6 +41,9 @@ function renderProducts() {
 }
 
 function updateCartUI() {
+    // Сохраняем корзину в память при каждом изменении
+    localStorage.setItem('tg_shop_cart', JSON.stringify(cart));
+
     const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
     cartCount.innerText = totalItems;
 
@@ -148,43 +152,37 @@ function submitOrder() {
         name: name,
         phone: phone,
         total: calculateTotal(),
-        items: itemsToSend
+        items: itemsToSend,
+        tg_user_id: user ? user.id : null // Передаем Telegram ID клиента
     };
 
     tg.MainButton.showProgress();
     
     fetch(BACKEND_URL, {
         method: 'POST',
-        // ДОБАВЛЕНЫ ЗАГОЛОВКИ ДЛЯ ОБХОДА ОШИБКИ CORS В GOOGLE SCRIPT
         headers: {
             'Content-Type': 'text/plain;charset=utf-8',
         },
         body: JSON.stringify(orderData)
     })
-    .then(response => response.json())
-    .then(data => {
+    .then(() => {
         tg.MainButton.hideProgress();
-        if (data.status === 'success') {
-            tg.HapticFeedback.notificationOccurred('success');
-            tg.showPopup({
-                title: 'Успешно!',
-                message: 'Ваш заказ принят. Мы свяжемся с вами.',
-                buttons: [{ type: 'ok' }]
-            }, () => {
-                cart = {};
-                orderForm.reset();
-                closeCheckout();
-                updateCartUI();
-            });
-        } else {
-            throw new Error('Ошибка сервера');
-        }
+        tg.HapticFeedback.notificationOccurred('success');
+        tg.showPopup({
+            title: 'Успешно!',
+            message: 'Ваш заказ принят. Мы свяжемся с вами.',
+            buttons: [{ type: 'ok' }]
+        }, () => {
+            cart = {};
+            orderForm.reset();
+            closeCheckout();
+            updateCartUI(); // Корзина очистится и в localStorage
+        });
     })
     .catch(error => {
         tg.MainButton.hideProgress();
         tg.HapticFeedback.notificationOccurred('error');
-        // Выводим ошибку подробнее для отладки
-        tg.showAlert('Ошибка: ' + error.message + '. Проверьте настройки Google Script.');
+        tg.showAlert('Ошибка сети. Проверьте интернет-соединение.');
     });
 }
 
