@@ -3,7 +3,7 @@ tg.ready();
 tg.expand();
 
 // Ваш URL от Google Apps Script
-const BACKEND_URL = "https://script.google.com/macros/s/AKfycbyFkEqdfhLkz44_ntWgH4Sd1aZznUM0avkwv2IcRg70YyIEwWN8qHD2AeV12gOw5ogV2g/exec";
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbymgXq3lXXbuEqeBAQq7EKWL4z_AKkhRU7jqz5ASD5PyjLTXZLjVj2eWtcPJCUApPktLA/exec";
 
 const user = tg.initDataUnsafe?.user;
 if (user) document.getElementById('user-name').innerText = user.first_name;
