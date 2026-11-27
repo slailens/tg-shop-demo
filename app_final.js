@@ -118,6 +118,7 @@ function showProductDetails(product) {
         : `${product.price} ₽`;
 
     currentProductForCart = product.id;
+        updateFavIcon(product.id);
     
     // Загрузка отзывов
     const revList = document.getElementById('reviews-list');
@@ -145,7 +146,15 @@ tg.BackButton.onClick(() => { showCategories(); });
 document.getElementById('search-input').addEventListener('input', (e) => {
     const q = e.target.value.toLowerCase();
     if(q.length > 0) {
-        hideAllViews(); prodView.classList.remove('hidden'); pageTitle.innerText = 'Результаты поиска'; tg.BackButton.show();
+        // Скрываем другие экраны, но НЕ ТРОГАЕМ поисковую строку
+        catView.classList.add('hidden'); 
+        favView.classList.add('hidden'); 
+        detailView.classList.add('hidden'); 
+        prodView.classList.remove('hidden'); 
+        
+        pageTitle.innerText = 'Поиск'; 
+        tg.BackButton.show();
+        
         const filtered = products.filter(p => p.name.toLowerCase().includes(q));
         renderProductCards(filtered, document.getElementById('product-list'));
     } else {
@@ -393,5 +402,63 @@ if (isAdmin) {
     };
 }
 
+// --- ЛОГИКА ИЗБРАННОГО ---
+function loadFavorites() {
+    const saved = localStorage.getItem('tg_shop_favs');
+    if (saved) favorites = JSON.parse(saved);
+    updateFavCount();
+}
+
+function updateFavCount() {
+    const badge = document.getElementById('fav-count');
+    if (favorites.length > 0) {
+        badge.innerText = favorites.length;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+window.toggleFavorite = (id) => {
+    const index = favorites.indexOf(id);
+    if (index > -1) {
+        favorites.splice(index, 1); // Удаляем
+    } else {
+        favorites.push(id); // Добавляем
+    }
+    localStorage.setItem('tg_shop_favs', JSON.stringify(favorites));
+    tg.HapticFeedback.impactOccurred('light');
+    updateFavIcon(id);
+    updateFavCount();
+};
+
+function updateFavIcon(id) {
+    const btn = document.getElementById('btn-fav-detail');
+    if (favorites.includes(id)) {
+        btn.innerText = '❤️';
+        btn.style.background = '#ffeded';
+    } else {
+        btn.innerText = '🤍';
+        btn.style.background = 'var(--bg-color)';
+    }
+}
+
+// Привязка кнопки сердечка в карточке
+document.getElementById('btn-fav-detail').onclick = () => {
+    toggleFavorite(currentProductForCart);
+};
+
+// Обновленный обработчик кнопки Избранное в шапке
+document.getElementById('fav-btn').onclick = () => {
+    hideAllViews(); 
+    favView.classList.remove('hidden'); 
+    pageTitle.innerText = 'Избранное'; 
+    tg.BackButton.show();
+    const favProds = products.filter(p => favorites.includes(p.id));
+    renderProductCards(favProds, document.getElementById('fav-list'));
+};
+
+// Вызов загрузки избранного при старте
+loadFavorites();
 // Запуск
 fetchData(); updateCartUI();
