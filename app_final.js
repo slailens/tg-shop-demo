@@ -82,7 +82,11 @@ function showProducts(categoryId, categoryName) {
 }
 
 function renderProductCards(arr, container) {
-    if(arr.length === 0) { container.innerHTML = '<p style="text-align:center; color:#777;">Ничего не найдено</p>'; return; }
+    container.innerHTML = ''; // <--- ВОТ ЭТА СТРОКА ОЧИЩАЕТ ЭКРАН ОТ СТАРЫХ КАРТОЧЕК
+    if(arr.length === 0) { 
+        container.innerHTML = '<p style="text-align:center; color:#777;">Ничего не найдено</p>'; 
+        return; 
+    }
     arr.forEach(product => {
         let priceHtml = product.discount > 0 
             ? `<div class="price-block"><span class="new-price">${Math.round(product.price * (1 - product.discount/100))} ₽</span> <span class="old-price">${product.price} ₽</span> <span class="discount-badge">-${product.discount}%</span></div>`
@@ -420,11 +424,12 @@ function updateFavCount() {
 }
 
 window.toggleFavorite = (id) => {
-    const index = favorites.indexOf(id);
+    const stringId = id.toString();
+    const index = favorites.map(String).indexOf(stringId); // Проверяем как строки
     if (index > -1) {
         favorites.splice(index, 1); // Удаляем
     } else {
-        favorites.push(id); // Добавляем
+        favorites.push(stringId); // Добавляем
     }
     localStorage.setItem('tg_shop_favs', JSON.stringify(favorites));
     tg.HapticFeedback.impactOccurred('light');
