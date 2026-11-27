@@ -4,52 +4,83 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мини-магазин</title>
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=20">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <header>
+    <header id="main-header">
         <div class="header-top">
             <h1 id="page-title">Категории</h1>
-            <div style="display: flex; gap: 8px;">
-                <!-- Кнопка админки (появится только у админа) -->
-                <div class="cart-icon hidden" id="admin-btn" style="background: #2C3E50; color: white;">⚙️</div>
-                <div class="cart-icon" id="cart-icon">
-                    🛒 <span id="cart-count">0</span>
-                </div>
+            <div class="header-actions">
+                <div class="icon-btn hidden" id="admin-btn">⚙️</div>
+                <div class="icon-btn" id="fav-btn">❤️ <span id="fav-count" class="badge hidden">0</span></div>
+                <div class="icon-btn" id="cart-icon">🛒 <span id="cart-count" class="badge">0</span></div>
             </div>
         </div>
-        <p>Привет, <span id="user-name">гость</span>! Что будем покупать?</p>
+        <div class="search-bar" id="search-container">
+            <input type="text" id="search-input" placeholder="Поиск товаров...">
+        </div>
     </header>
 
-    <!-- Экран 1: Категории -->
+    <!-- Главный экран -->
     <main id="categories-view">
+        <img id="banner-img" class="banner-img hidden" src="" alt="Баннер">
         <div id="category-list" class="category-grid"></div>
     </main>
 
-    <!-- Экран 2: Товары в категории -->
+    <!-- Экран товаров в категории / Поиска -->
     <main id="products-view" class="hidden">
         <button id="back-to-categories" class="back-btn">← Назад</button>
         <div id="product-list"></div>
     </main>
 
-    <!-- Модальное окно Корзины -->
-    <div id="cart-modal" class="hidden">
+    <!-- Экран Избранного -->
+    <main id="favorites-view" class="hidden">
+        <button id="back-from-fav" class="back-btn">← Назад</button>
+        <div id="fav-list"></div>
+    </main>
+
+    <!-- Экран одного товара (Карточка) -->
+    <main id="product-details-view" class="hidden">
+        <button id="back-from-details" class="back-btn">← Назад</button>
+        <img id="detail-img" class="detail-img" src="">
+        <h2 id="detail-name" class="detail-name"></h2>
+        <div id="detail-price" class="detail-price"></div>
+        <p id="detail-desc" class="detail-desc"></p>
+        
+        <div class="reviews-section">
+            <h3>Отзывы</h3>
+            <div id="reviews-list"></div>
+        </div>
+
+        <button id="btn-add-to-cart-detail" class="btn-primary full-width" style="margin-top: 20px;">Добавить в корзину</button>
+    </main>
+
+    <!-- Модалка Корзины -->
+    <div id="cart-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Корзина</h2>
                 <button id="close-cart" class="close-btn">✖</button>
             </div>
             <div id="cart-items" class="cart-items-list"></div>
+            
+            <div class="promo-section">
+                <input type="text" id="promo-input" placeholder="Промокод">
+                <button id="apply-promo-btn" class="btn-secondary">Применить</button>
+            </div>
+
             <div id="cart-total-block" class="cart-total-block hidden">
-                <span>Итого:</span>
-                <span id="cart-total-price">0 ₽</span>
+                <div style="display:flex; justify-content:space-between; width:100%;">
+                    <span>Итого:</span>
+                    <span id="cart-total-price">0 ₽</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Модальное окно Оформления -->
-    <div id="checkout-modal" class="hidden">
+    <!-- Модалка Оформления -->
+    <div id="checkout-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Оформление</h2>
@@ -69,69 +100,65 @@
     </div>
 
     <!-- МОДАЛЬНОЕ ОКНО АДМИН-ПАНЕЛИ -->
-    <div id="admin-modal" class="hidden">
-        <div class="modal-content" style="height: 90vh; background: #F4F6F8;">
+    <div id="admin-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="height: 90vh;">
             <div class="modal-header">
                 <h2>Админ-панель</h2>
                 <button id="close-admin" class="close-btn">✖</button>
             </div>
             
-            <!-- Навигация по вкладкам -->
             <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="tab-stats">📊 Статистика</button>
+                <button class="admin-tab active" data-tab="tab-stats">📊 Стата</button>
                 <button class="admin-tab" data-tab="tab-orders">📦 Заказы</button>
                 <button class="admin-tab" data-tab="tab-products">👕 Товары</button>
                 <button class="admin-tab" data-tab="tab-categories">📁 Категории</button>
+                <button class="admin-tab" data-tab="tab-broadcast">📢 Рассылка</button>
             </div>
 
-            <!-- Вкладка: Статистика -->
+            <!-- Статистика + Экспорт -->
             <div id="tab-stats" class="admin-tab-content">
-                <div class="stats-card">
-                    <h3>Общая выручка</h3>
-                    <p id="admin-total-revenue">0 ₽</p>
-                </div>
-                <div class="stats-card">
-                    <h3>Всего заказов</h3>
-                    <p id="admin-total-orders">0</p>
-                </div>
+                <div class="stats-card"><h3>Общая выручка</h3><p id="admin-total-revenue">0 ₽</p></div>
+                <div class="stats-card"><h3>Всего заказов</h3><p id="admin-total-orders">0</p></div>
+                <a href="https://docs.google.com/spreadsheets/d/111Fmd-I_uoLjeIAPoPBC9BanmUyJB9AkU50HCB-qS5g/export?format=xlsx" target="_blank" class="btn-primary full-width" style="text-align:center; display:block; margin-top:20px; text-decoration:none;">📥 Скачать Excel (Все данные)</a>
             </div>
 
-            <!-- Вкладка: Заказы -->
-            <div id="tab-orders" class="admin-tab-content hidden">
-                <div id="admin-orders-list"></div>
-            </div>
+            <!-- Заказы -->
+            <div id="tab-orders" class="admin-tab-content hidden"><div id="admin-orders-list"></div></div>
 
-            <!-- Вкладка: Товары -->
+            <!-- Товары -->
             <div id="tab-products" class="admin-tab-content hidden">
-                <button id="btn-show-add-product" class="buy-btn" style="width: 100%; border-radius: 8px; margin-bottom: 15px; font-size: 16px; height: auto; padding: 12px;">+ Добавить товар</button>
-                
+                <button id="btn-show-add-product" class="btn-primary full-width" style="margin-bottom: 15px;">+ Добавить товар</button>
                 <form id="admin-add-product-form" class="hidden admin-form">
-                    <!-- СКРЫТОЕ ПОЛЕ ДЛЯ ID (нужно для редактирования) -->
                     <input type="hidden" id="edit-prod-id" value="">
-                    
                     <input type="text" id="new-prod-name" placeholder="Название" required class="admin-input">
+                    <input type="text" id="new-prod-desc" placeholder="Описание" class="admin-input">
                     <input type="number" id="new-prod-price" placeholder="Цена (₽)" required class="admin-input">
-                    <input type="number" id="new-prod-discount" placeholder="Скидка (%)" value="0" min="0" max="99" class="admin-input">
-                    <input type="text" id="new-prod-img" placeholder="Ссылка на фото (URL)" required class="admin-input">
+                    <input type="number" id="new-prod-discount" placeholder="Скидка (%)" value="0" class="admin-input">
+                    <input type="text" id="new-prod-img" placeholder="Ссылка на фото" required class="admin-input">
                     <select id="new-prod-cat" class="admin-input" required></select>
-                    <button type="submit" id="admin-save-btn" class="admin-btn-save">Сохранить</button>
+                    <button type="submit" id="admin-save-btn" class="btn-secondary" style="background:#27AE60; color:white;">Сохранить</button>
                 </form>
-
                 <div id="admin-products-list"></div>
             </div>
 
-            <!-- Вкладка: Категории -->
+            <!-- Категории -->
             <div id="tab-categories" class="admin-tab-content hidden">
                 <form id="admin-add-category-form" class="admin-form" style="margin-bottom: 20px;">
-                    <input type="text" id="new-cat-name" placeholder="Название (например, 🎁 Подарки)" required class="admin-input">
-                    <button type="submit" class="admin-btn-save">Добавить категорию</button>
+                    <input type="text" id="new-cat-name" placeholder="Название" required class="admin-input">
+                    <button type="submit" class="btn-secondary" style="background:#27AE60; color:white;">Добавить</button>
                 </form>
                 <div id="admin-categories-list"></div>
+            </div>
+
+            <!-- Рассылка -->
+            <div id="tab-broadcast" class="admin-tab-content hidden">
+                <p style="font-size:12px; color:#666; margin-bottom:10px;">Сообщение получат все, кто хоть раз заходил в магазин.</p>
+                <textarea id="broadcast-text" class="admin-input" rows="4" placeholder="Текст рассылки (поддерживает HTML)"></textarea>
+                <button id="btn-send-broadcast" class="btn-primary full-width" style="margin-top:10px;">Отправить всем</button>
             </div>
         </div>
     </div>
 
-    <!-- Версия обновлена до 11 -->
-    <script src="app_new.js?v=2"></script>
+    <script src="app_final.js?v=1"></script>
 </body>
 </html>
